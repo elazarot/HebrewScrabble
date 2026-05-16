@@ -1,0 +1,35 @@
+{
+  "game_settings": {
+    "board_size": 15,
+    "tiles_per_player": 7,
+    "bingo_bonus": 50,
+    "total_tiles": 104,
+    "use_final_letters": false,
+    "timer_enabled_by_default": false,
+    "tiles_distribution": [
+      {"char": "ו", "count": 10, "points": 1},
+      {"char": "י", "count": 8, "points": 1},
+      {"char": "ת", "count": 9, "points": 1},
+      {"char": "ה", "count": 8, "points": 1},
+      {"char": "ר", "count": 8, "points": 1},
+      {"char": "א", "count": 6, "points": 2},
+      {"char": "ל", "count": 6, "points": 2},
+      {"char": "מ", "count": 6, "points": 2},
+      {"char": "ש", "count": 6, "points": 2},
+      {"char": "ב", "count": 4, "points": 4},
+      {"char": "ד", "count": 4, "points": 3},
+      {"char": "נ", "count": 4, "points": 3},
+      {"char": "ח", "count": 3, "points": 4},
+      {"char": "פ", "count": 3, "points": 4},
+      {"char": "ק", "count": 3, "points": 4},
+      {"char": "ג", "count": 2, "points": 5},
+      {"char": "כ", "count": 2, "points": 5},
+      {"char": "ע", "count": 2, "points": 5},
+      {"char": "ז", "count": 2, "points": 8},
+      {"char": "ט", "count": 2, "points": 8},
+      {"char": "ס", "count": 2, "points": 8},
+      {"char": "צ", "count": 2, "points": 8},
+      {"char": "blank", "count": 2, "points": 0}
+    ]
+  }
+}

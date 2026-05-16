@@ -1,0 +1,234 @@
+/**
+ * Design System & Global Styles for שבץ נא
+ * Premium dark theme with warm wood/gold accents.
+ * Convention §5: RTL is the default for all screens.
+ */
+
+/* ===== CSS Custom Properties (Design Tokens) ===== */
+:root {
+  /* --- Color Palette --- */
+  --color-bg-primary: hsl(45, 30%, 95%);
+  --color-bg-secondary: hsl(45, 25%, 90%);
+  --color-bg-tertiary: hsl(45, 20%, 85%);
+  --color-bg-glass: hsla(45, 30%, 95%, 0.95);
+  
+  /* Board colors */
+  --color-board-bg: hsl(120, 15%, 45%);
+  --color-board-grid: hsl(120, 20%, 30%);
+  --color-board-square: hsl(120, 12%, 50%);
+  --color-board-square-hover: hsl(120, 12%, 55%);
+  
+  /* Bonus square colors */
+  --color-dl: white;
+  --color-dl-bg: hsl(200, 50%, 65%);
+  --color-tl: white;
+  --color-tl-bg: hsl(210, 50%, 40%);
+  --color-dw: white;
+  --color-dw-bg: hsl(350, 50%, 65%);
+  --color-tw: white;
+  --color-tw-bg: hsl(0, 50%, 50%);
+  --color-center: white;
+  --color-center-bg: hsl(350, 50%, 65%);
+  
+  /* Tile colors */
+  --color-tile-bg: hsl(35, 50%, 88%);
+  --color-tile-bg-hover: hsl(35, 60%, 92%);
+  --color-tile-text: hsl(0, 0%, 15%);
+  --color-tile-points: hsl(0, 0%, 30%);
+  --color-tile-shadow: hsla(0, 0%, 0%, 0.2);
+  --color-tile-placed: hsl(35, 40%, 80%);
+  --color-tile-blank: hsl(35, 20%, 85%);
+  
+  /* Text */
+  --color-text-primary: hsl(0, 0%, 15%);
+  --color-text-secondary: hsl(0, 0%, 35%);
+  --color-text-muted: hsl(0, 0%, 50%);
+  
+  /* Accent */
+  --color-accent: hsl(210, 60%, 40%);
+  --color-accent-hover: hsl(210, 60%, 30%);
+  --color-accent-glow: hsla(210, 60%, 40%, 0.1);
+  
+  /* Action buttons */
+  --color-success: hsl(140, 50%, 40%);
+  --color-success-hover: hsl(140, 50%, 35%);
+  --color-danger: hsl(0, 60%, 50%);
+  --color-danger-hover: hsl(0, 60%, 40%);
+  --color-warning: hsl(35, 80%, 45%);
+  
+  /* --- Typography --- */
+  --font-primary: 'Assistant', 'Segoe UI', system-ui, sans-serif;
+  --font-display: 'Secular One', 'Assistant', sans-serif;
+  
+  --text-xs: 0.65rem;
+  --text-sm: 0.8rem;
+  --text-base: 1rem;
+  --text-lg: 1.15rem;
+  --text-xl: 1.4rem;
+  --text-2xl: 1.8rem;
+  --text-3xl: 2.4rem;
+  
+  /* --- Spacing --- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  
+  /* --- Border Radius --- */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-round: 50%;
+  
+  /* --- Shadows --- */
+  --shadow-sm: 0 1px 2px hsla(0, 0%, 0%, 0.1);
+  --shadow-md: 0 2px 4px hsla(0, 0%, 0%, 0.15);
+  --shadow-lg: 0 4px 12px hsla(0, 0%, 0%, 0.2);
+  --shadow-glow: none;
+  
+  /* --- Transitions --- */
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease;
+  --transition-slow: 400ms ease;
+  
+  /* --- Board dimensions --- */
+  --board-gap: 2px;
+  --square-size: clamp(24px, min(3.8vw, 5.5vh), 42px);
+  --tile-size: calc(var(--square-size) - 4px);
+  --rack-tile-size: clamp(40px, 6vmin, 56px);
+}
+
+/* ===== Reset & Base ===== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-primary);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  direction: rtl;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== Background Pattern ===== */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: 
+    radial-gradient(ellipse at 20% 50%, hsla(45, 60%, 40%, 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, hsla(200, 60%, 40%, 0.04) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 80%, hsla(350, 40%, 40%, 0.04) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg-secondary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-text-muted);
+  border-radius: var(--radius-sm);
+}
+
+/* ===== Utility Classes ===== */
+.glass {
+  background: var(--color-bg-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid hsla(40, 20%, 40%, 0.15);
+}
+
+.glow-accent {
+  box-shadow: var(--shadow-glow);
+}
+
+/* ===== Animations ===== */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes tilePlace {
+  0% { transform: scale(1.3); opacity: 0.6; }
+  50% { transform: scale(0.95); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes scorePop {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-40px) scale(1.3); opacity: 0; }
+}
+
+@keyframes thinking {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+@keyframes starPulse {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.15); filter: brightness(1.3); }
+}
+
+/* ===== Message Bar ===== */
+.message-bar {
+  position: fixed;
+  bottom: var(--space-8);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  animation: slideUp 0.3s var(--ease-out);
+  white-space: nowrap;
+}
+
+.message-bar--success { background: hsl(140, 70%, 90%); color: hsl(140, 50%, 15%); border: 1px solid hsl(140, 50%, 70%); }
+.message-bar--error { background: hsl(0, 70%, 92%); color: hsl(0, 50%, 15%); border: 1px solid hsl(0, 50%, 70%); }
+.message-bar--info { background: hsl(210, 70%, 92%); color: hsl(210, 50%, 15%); border: 1px solid hsl(210, 50%, 70%); }
