@@ -97,7 +97,7 @@
   
   /* --- Board dimensions --- */
   --board-gap: 2px;
-  --square-size: clamp(24px, min(3.8vw, 5.5vh), 42px);
+  --square-size: clamp(20px, min(3.8vw, 5.5vh), 42px);
   --tile-size: calc(var(--square-size) - 4px);
   --rack-tile-size: clamp(40px, 6vmin, 56px);
 }
@@ -281,29 +281,33 @@ body::before {
   }
 
   .rack-section {
-    width: 360px;
+    width: 400px;
     height: 100%;
     background: var(--color-bg-tertiary);
     border-left: 1px solid var(--color-bg-secondary);
     display: flex;
     flex-direction: column;
-    padding: var(--space-4);
-    gap: var(--space-4);
+    align-items: center;
+    padding: var(--space-6) var(--space-4);
+    gap: var(--space-6);
     box-shadow: 4px 0 15px rgba(0,0,0,0.05);
     z-index: 10;
     overflow-y: auto;
-    --rack-tile-size: 40px; /* Fixed size for desktop sidebar */
+    --rack-tile-size: 42px;
   }
 
   .rack-container {
-    padding: var(--space-1) 0;
+    padding: var(--space-2) 0;
     width: 100%;
-    gap: var(--space-1);
+    display: flex;
+    justify-content: center;
   }
 
   .controls {
-    grid-template-columns: 1fr; /* Stack buttons in sidebar */
+    grid-template-columns: 1fr;
     gap: var(--space-2);
+    width: 100%;
+    max-width: 340px;
   }
 
   .btn {
