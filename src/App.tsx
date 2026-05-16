@@ -294,6 +294,20 @@ const App: React.FC = () => {
               currentMoveResult={currentMoveResult}
               lastPlayedTiles={lastMove?.placedTiles}
             />
+            {/* Message Bar centered over board */}
+            {message && (
+              <div className={`message-bar message-bar--${message.type}`} style={{ 
+                position: 'absolute', 
+                bottom: '40px', 
+                left: '50%', 
+                transform: 'translateX(-50%)',
+                zIndex: 9999,
+                width: 'auto',
+                minWidth: '280px'
+              }}>
+                {message.text}
+              </div>
+            )}
           </div>
 
           <div className="rack-section">
@@ -448,11 +462,6 @@ const App: React.FC = () => {
               🔄 משחק חדש
             </button>
           </div>
-        </div>
-      )}
-      {message && (
-        <div className={`message-bar message-bar--${message.type}`}>
-          {message.text}
         </div>
       )}
     </div>
