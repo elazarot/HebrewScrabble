@@ -5,9 +5,9 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: var(--space-2);
+  padding: var(--space-4);
   perspective: 1000px;
-  min-height: 0; /* Allow shrinking in flex */
+  min-height: 0;
   overflow: hidden;
   animation: scaleIn var(--transition-slow) ease-out;
 }
