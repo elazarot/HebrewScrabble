@@ -116,18 +116,31 @@ html {
 }
 
 body {
+  margin: 0;
   font-family: var(--font-primary);
-  background: var(--color-bg-primary);
+  background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
-  min-height: 100vh;
-  overflow-x: hidden;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
   direction: rtl;
 }
 
 #root {
-  min-height: 100vh;
+  height: 100%;
+  width: 100%;
+}
+
+.app {
+  height: 100vh;
   display: flex;
   flex-direction: column;
+  background-color: var(--color-bg-secondary);
+  position: relative;
+  overflow: hidden;
 }
 
 /* ===== Background Pattern ===== */

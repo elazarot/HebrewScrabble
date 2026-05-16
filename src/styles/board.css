@@ -1,10 +1,14 @@
 /* ===== Board Component Styles ===== */
 
 .board-container {
+  flex: 1;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: var(--space-3);
+  padding: var(--space-2);
+  perspective: 1000px;
+  min-height: 0; /* Allow shrinking in flex */
+  overflow: hidden;
   animation: scaleIn var(--transition-slow) ease-out;
 }
 
