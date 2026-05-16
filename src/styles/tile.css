@@ -62,13 +62,15 @@
   grid-template-columns: repeat(2, 1fr);
   gap: var(--space-2);
   width: 100%;
-  max-width: 400px;
+  padding: 0 var(--space-4);
+  max-width: 440px;
   margin: 0 auto;
   direction: rtl;
 }
 
-.controls > button:first-child {
-  grid-column: span 2; /* Make the main action button full width */
+/* All buttons equal size */
+.controls > button {
+  width: 100%;
 }
 
 .btn {

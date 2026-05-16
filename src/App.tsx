@@ -450,6 +450,11 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
+      {message && (
+        <div className={`message-bar message-bar--${message.type}`}>
+          {message.text}
+        </div>
+      )}
     </div>
   );
 };
