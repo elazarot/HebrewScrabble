@@ -97,7 +97,7 @@
   
   /* --- Board dimensions --- */
   --board-gap: 2px;
-  --square-size: clamp(20px, min(3.8vw, 5.5vh), 42px);
+  --square-size: clamp(23px, min(3.8vw, 5.5vh), 42px);
   --tile-size: calc(var(--square-size) - 4px);
   --rack-tile-size: clamp(40px, 6vmin, 56px);
 }
