@@ -266,30 +266,33 @@ const App: React.FC = () => {
       )}
 
       {/* Main game area */}
-      <main className="game-main" style={{ position: 'relative' }}>
-        {/* AI thinking indicator */}
-        {isAITurn && state.phase === 'PLAYING' && (
-          <div className="ai-thinking">
-            <span>🤖 המחשב חושב</span>
-            <div className="ai-thinking-dots">
-              <span></span><span></span><span></span>
-            </div>
+      <main className="game-main">
+        <div className="game-layout">
+          <div className="board-section">
+            {/* AI thinking indicator */}
+            {isAITurn && state.phase === 'PLAYING' && (
+              <div className="ai-thinking">
+                <span>🤖 המחשב חושב</span>
+                <div className="ai-thinking-dots">
+                  <span></span><span></span><span></span>
+                </div>
+              </div>
+            )}
+
+            <Board
+              board={state.board}
+              placedTiles={state.placedTiles}
+              selectedTile={selectedTile}
+              onSquareClick={handleSquareClick}
+              onPlacedTileClick={handlePlacedTileClick}
+              onLongPress={handleLongPress}
+              currentMoveResult={currentMoveResult}
+              lastPlayedTiles={lastMove?.placedTiles}
+            />
           </div>
-        )}
 
-        {/* Board */}
-        <Board
-          board={state.board}
-          placedTiles={state.placedTiles}
-          selectedTile={selectedTile}
-          onSquareClick={handleSquareClick}
-          onPlacedTileClick={handlePlacedTileClick}
-          onLongPress={handleLongPress}
-          currentMoveResult={currentMoveResult}
-          lastPlayedTiles={lastMove?.placedTiles}
-        />
-
-        {/* Player Rack */}
+          <div className="rack-section">
+            {/* Player Rack */}
         <Rack
           tiles={humanPlayer?.rack || []}
           selectedTileId={selectedTile?.id || null}
@@ -356,6 +359,8 @@ const App: React.FC = () => {
             </>
           )}
         </div>
+          </div>
+        </div>
 
         {/* Blank tile letter picker modal */}
         {blankTileId && (
@@ -412,12 +417,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Message Bar */}
-      {message && (
-        <div className={`message-bar message-bar--${message.type}`}>
-          {message.text}
-        </div>
-      )}
 
       {/* Game Over Overlay */}
       {state.phase === 'GAME_OVER' && (
