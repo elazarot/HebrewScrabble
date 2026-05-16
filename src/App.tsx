@@ -259,11 +259,16 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      {lastMoveText && (
-        <div className="last-move-announcement" style={{ textAlign: 'center', color: 'var(--color-primary)', fontSize: 'var(--text-sm)', fontWeight: 'bold', padding: 'var(--space-2)' }}>
-          {lastMoveText}
-        </div>
-      )}
+      <div style={{ height: '30px', position: 'relative' }}>
+        {lastMoveText && (
+          <div className="last-move-announcement" style={{ 
+            textAlign: 'center', color: 'var(--color-primary)', fontSize: 'var(--text-sm)', 
+            fontWeight: 'bold', padding: 'var(--space-1)', width: '100%', position: 'absolute', top: 0
+          }}>
+            {lastMoveText}
+          </div>
+        )}
+      </div>
 
       {/* Main game area */}
       <main className="game-main">

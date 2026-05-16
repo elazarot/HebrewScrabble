@@ -57,7 +57,19 @@
   margin: 0 auto;
 }
 
-.controls { display: flex; gap: var(--space-2); flex-wrap: wrap; justify-content: center; direction: rtl; }
+.controls { 
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-2);
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  direction: rtl;
+}
+
+.controls > button:first-child {
+  grid-column: span 2; /* Make the main action button full width */
+}
 
 .btn {
   display: inline-flex; align-items: center; gap: var(--space-2);
