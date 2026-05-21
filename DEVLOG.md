@@ -42,9 +42,9 @@
     - Inside the worker context, dynamically loads and normalizes the local JSON dictionary (`dictionary.json`) to allow O(1) lookups.
     - Updated `src/hooks/useGame.ts` to spin up the Web Worker, pass the current board state, and listen for the calculated move asynchronously.
     - Implemented a robust React cleanup routine in the `useEffect` trigger hook: if the game is reset, or the component unmounts while the AI is mid-calculation, the background thread is instantly terminated (`worker.terminate()`) to prevent memory leaks and save CPU resources.
-13. **Integrated Academy of the Hebrew Language Dictionary**:
-    - Replaced the third Wiktionary source with the official term search of **האקדמיה ללשון העברית** (`https://hebrew-academy.org.il/?s=`) in `src/services/dictionaryService.ts` and `src/components/DefinitionModal.tsx`.
-    - Declared a strict `DictionarySource` interface in `src/services/dictionaryService.ts` to solve compiler issues and maintain strict typing.
+13. **Integrated Community Wiktionary Dictionary**:
+    - Replaced the third dictionary source with **ויקימילון** (`https://he.wiktionary.org/wiki/`) in `src/services/dictionaryService.ts` and `src/components/DefinitionModal.tsx` to support frame embeds seamlessly.
+    - Declared a strict `DictionarySource` interface in `src/services/dictionaryService.ts` to maintain type-safety.
 14. **Renamed Application to 'שבץ נא'**:
     - Updated HTML metadata headers and Open Graph descriptors to use the elegant name "שבץ נא".
     - Configured Capacitor (`capacitor.config.ts`) and native Android resource configuration (`strings.xml`'s `app_name` and `title_activity_main` parameters) so the application properly launches as "שבץ נא" on mobile device screens.
@@ -52,6 +52,10 @@
     - Automatically generated a beautiful, classic wooden tile 'שבץ נא' app icon using AI image generation.
     - Updated the PowerShell script (`scripts/generate_icons.ps1`) to use this newly approved icon draft as the default source image.
     - Re-ran the resizing script to regenerate all generic, Android mipmap (`ic_launcher.png`, `ic_launcher_round.png`), and PWA favicon/icon files.
+16. **Restored Final Letters for External Dictionary Searches**:
+    - Implemented a smart `restoreFinalLetters` utility function in `src/services/dictionaryService.ts` to automatically detect if a Scrabble word ends with 'כ, מ, נ, פ, צ' and substitute them with their proper final letter counterparts ('ך, ם, ן, ף, ץ').
+    - Applied this conversion in the dictionary query hooks and modal tabs so that external searches receive fully valid, standardized Hebrew grammar (e.g. 'מלכ' is successfully queried as 'מלך'), bringing back rich dictionary definitions immediately.
+
 
 
 
