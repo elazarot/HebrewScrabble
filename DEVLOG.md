@@ -42,6 +42,17 @@
     - Inside the worker context, dynamically loads and normalizes the local JSON dictionary (`dictionary.json`) to allow O(1) lookups.
     - Updated `src/hooks/useGame.ts` to spin up the Web Worker, pass the current board state, and listen for the calculated move asynchronously.
     - Implemented a robust React cleanup routine in the `useEffect` trigger hook: if the game is reset, or the component unmounts while the AI is mid-calculation, the background thread is instantly terminated (`worker.terminate()`) to prevent memory leaks and save CPU resources.
+13. **Integrated Academy of the Hebrew Language Dictionary**:
+    - Replaced the third Wiktionary source with the official term search of **האקדמיה ללשון העברית** (`https://hebrew-academy.org.il/?s=`) in `src/services/dictionaryService.ts` and `src/components/DefinitionModal.tsx`.
+    - Declared a strict `DictionarySource` interface in `src/services/dictionaryService.ts` to solve compiler issues and maintain strict typing.
+14. **Renamed Application to 'שבץ נא'**:
+    - Updated HTML metadata headers and Open Graph descriptors to use the elegant name "שבץ נא".
+    - Configured Capacitor (`capacitor.config.ts`) and native Android resource configuration (`strings.xml`'s `app_name` and `title_activity_main` parameters) so the application properly launches as "שבץ נא" on mobile device screens.
+15. **Generated and Applied Premium 'שבץ נא' App Icon**:
+    - Automatically generated a beautiful, classic wooden tile 'שבץ נא' app icon using AI image generation.
+    - Updated the PowerShell script (`scripts/generate_icons.ps1`) to use this newly approved icon draft as the default source image.
+    - Re-ran the resizing script to regenerate all generic, Android mipmap (`ic_launcher.png`, `ic_launcher_round.png`), and PWA favicon/icon files.
+
 
 
 ### 📋 Status

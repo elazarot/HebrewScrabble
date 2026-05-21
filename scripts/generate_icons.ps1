@@ -1,11 +1,11 @@
+param (
+    [string]$sourcePath = "C:\Users\elaza\.gemini\antigravity\brain\9c0b038f-d661-4475-996f-1d2f9a358cd2\new_scrabble_icon_draft_1779379852989.png"
+)
+
 # PowerShell script to generate Scrabble IL Android & Web Icons from the uploaded image.
 # Uses standard .NET System.Drawing classes.
 
 Add-Type -AssemblyName System.Drawing
-
-param (
-    [string]$sourcePath = "C:\Users\elaza\.gemini\antigravity\brain\9c0b038f-d661-4475-996f-1d2f9a358cd2\media__1779376366834.jpg"
-)
 
 if (-not (Test-Path $sourcePath)) {
     Write-Error "Source image not found at $sourcePath"
