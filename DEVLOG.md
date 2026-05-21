@@ -44,11 +44,12 @@
 * **Stability**: High. The Android app now successfully loads internal web assets offline/standalone, eliminating the black screen bug.
 
 ### 🚀 Next Steps (To-Do)
-1. **Dictionary Whitelist**: Add a list of ~100 common "Ktif Hasar" words (like "יתן", "אמא") to improve user experience.
-2. **Sound FX**: Add subtle sounds for tile placement, move submission, and errors.
-3. **Web Worker**: Move AI engine to a background thread to prevent UI micro-stutters during "thinking".
-4. **PWA Support**: Ensure offline-first capabilities for the web version.
-5. **Favicon/Logo**: Create a custom icon for the site and home screen.
+1. **Web Worker Integration (Performance)**: Move the local AI engine to a background thread to prevent UI micro-stutters during the dictionary search on heavy boards.
+2. **Sound FX (Audio Feedback)**: Integrate subtle, retro-style wood clicking sounds for tile placements, and gentle chimes for moves and errors.
+3. **Firebase & Firestore Setup (Infrastructure)**: Install Firebase SDK and initialize a Firestore project. Define flat database schemas for storing matches, game status, and players.
+4. **Game Lobby & Matchmaking (Lobby System)**: Implement game lobby UI to allow creating matches, generating unique invite links/codes, and joining active online matches.
+5. **Real-time Turn Synchronization (Online Multiplayer)**: Connect `gameReducer` state transitions (PLAY, PASS, SWAP) to live Firestore document updates to support multi-player gameplay according to our offline-first conventions (syncing only on `onTurnComplete`).
+6. **PWA Support (Offline Web)**: Complete PWA service workers and manifests to allow playing the web version completely offline.
 
 ## 2026-05-16 - Deployment, Responsive Layout & AI Balance
 
