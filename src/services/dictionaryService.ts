@@ -6,7 +6,14 @@ export interface WordDefinition {
   sourceName: string;
 }
 
-const DICTIONARIES = [
+interface DictionarySource {
+  name: string;
+  getUrl: (word: string) => string;
+  notFoundIndicator?: string;
+  is404Check?: boolean;
+}
+
+const DICTIONARIES: DictionarySource[] = [
   {
     name: 'מילוג',
     getUrl: (word: string) => `https://milog.co.il/${encodeURIComponent(word)}`,
@@ -18,9 +25,9 @@ const DICTIONARIES = [
     notFoundIndicator: 'לא נמצאו ערכים'
   },
   {
-    name: 'ויקימילון',
-    getUrl: (word: string) => `https://he.wiktionary.org/wiki/${encodeURIComponent(word)}`,
-    is404Check: true
+    name: 'האקדמיה ללשון',
+    getUrl: (word: string) => `https://hebrew-academy.org.il/?s=${encodeURIComponent(word)}`,
+    notFoundIndicator: 'לא נמצאו תוצאות'
   }
 ];
 
