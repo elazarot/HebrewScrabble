@@ -9,7 +9,7 @@ interface DefinitionModalProps {
 const SOURCES = [
   { name: 'מילוג', getUrl: (word: string) => `https://milog.co.il/${encodeURIComponent(word)}` },
   { name: 'אבניאון', getUrl: (word: string) => `https://www.milononline.net/do_search.php?Q=${encodeURIComponent(word)}` },
-  { name: 'האקדמיה ללשון', getUrl: (word: string) => `https://hebrew-academy.org.il/?s=${encodeURIComponent(word)}` }
+  { name: 'ויקימילון', getUrl: (word: string) => `https://he.wiktionary.org/wiki/${encodeURIComponent(word)}` }
 ];
 
 export const DefinitionModal: React.FC<DefinitionModalProps> = ({ definitions, onClose }) => {

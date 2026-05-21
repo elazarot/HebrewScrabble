@@ -6,6 +6,26 @@ export interface WordDefinition {
   sourceName: string;
 }
 
+/**
+ * Restores final letters (ך, ם, ן, ף, ץ) at the end of a word if it ends with their standard equivalents.
+ * This is used for external dictionaries since the Scrabble board uses only non-final letters.
+ */
+export function restoreFinalLetters(word: string): string {
+  if (!word) return word;
+  const lastChar = word.slice(-1);
+  const replacements: { [key: string]: string } = {
+    'כ': 'ך',
+    'מ': 'ם',
+    'נ': 'ן',
+    'פ': 'ף',
+    'צ': 'ץ'
+  };
+  if (replacements[lastChar]) {
+    return word.slice(0, -1) + replacements[lastChar];
+  }
+  return word;
+}
+
 interface DictionarySource {
   name: string;
   getUrl: (word: string) => string;
@@ -25,9 +45,9 @@ const DICTIONARIES: DictionarySource[] = [
     notFoundIndicator: 'לא נמצאו ערכים'
   },
   {
-    name: 'האקדמיה ללשון',
-    getUrl: (word: string) => `https://hebrew-academy.org.il/?s=${encodeURIComponent(word)}`,
-    notFoundIndicator: 'לא נמצאו תוצאות'
+    name: 'ויקימילון',
+    getUrl: (word: string) => `https://he.wiktionary.org/wiki/${encodeURIComponent(word)}`,
+    is404Check: true
   }
 ];
 
@@ -38,7 +58,8 @@ const DICTIONARIES: DictionarySource[] = [
 export async function fetchDefinitions(words: string[]): Promise<WordDefinition[]> {
   const results: WordDefinition[] = [];
 
-  for (const word of words) {
+  for (const rawWord of words) {
+    const word = restoreFinalLetters(rawWord);
     let bestSource = DICTIONARIES[0]; // Default to Milog
     
     // Try each dictionary in order
