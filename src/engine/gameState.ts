@@ -295,7 +295,7 @@ function handleSwapTiles(state: GameState, tilesToSwap: typeof state.players[0][
   const newRack = [...remainingRack, ...newTiles];
   
   const newPlayers = state.players.map((p, i) =>
-    i === state.currentPlayerIndex ? { ...p, rack: newRack, consecutivePasses: 0, swapsRemaining: p.swapsRemaining - 1 } : p
+    i === state.currentPlayerIndex ? { ...p, rack: newRack, consecutivePasses: 0, swapsRemaining: p.swapsRemaining - tilesToSwap.length } : p
   );
   
   // Return swapped tiles to bag

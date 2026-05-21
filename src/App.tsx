@@ -154,11 +154,19 @@ const App: React.FC = () => {
   const handleSwapTileToggle = useCallback((tile: Tile) => {
     setTilesToSwap(prev => {
       const next = new Set(prev);
-      if (next.has(tile.id)) next.delete(tile.id);
-      else next.add(tile.id);
+      if (next.has(tile.id)) {
+        next.delete(tile.id);
+      } else {
+        const remainingLimit = humanPlayer?.swapsRemaining || 0;
+        if (next.size >= remainingLimit) {
+          showMessage(`נשארו לך רק ${remainingLimit} אריחים להחלפה סך הכל!`, 'error');
+          return prev;
+        }
+        next.add(tile.id);
+      }
       return next;
     });
-  }, []);
+  }, [humanPlayer?.swapsRemaining, showMessage]);
 
   const handleLongPress = useCallback(async (words: string[]) => {
     // Block dictionary lookup while the player is actively placing unconfirmed tiles
@@ -361,7 +369,7 @@ const App: React.FC = () => {
                 disabled={isAITurn || state.tileBag.length === 0 || state.placedTiles.length > 0 || (humanPlayer?.swapsRemaining || 0) <= 0}
                 id="btn-swap"
               >
-                🔄 החלף ({humanPlayer?.swapsRemaining || 0}/3)
+                🔄 החלף אריחים (נותרו: {humanPlayer?.swapsRemaining || 0})
               </button>
             </>
           ) : (

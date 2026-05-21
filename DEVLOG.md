@@ -33,6 +33,10 @@
 10. **Prevented Dictionary Exploit/Cheating**:
     - Modified `handleLongPress` in `src/App.tsx` to check if it's the human's turn and there are unconfirmed tiles placed on the board (`state.placedTiles.length > 0`).
     - If so, it blocks the dictionary definition search and shows a user-friendly error message, preventing the player from testing word combinations on the board to cheat.
+11. **Refined Tile Swap Rules (Individual Tile Limit)**:
+    - Modified `handleSwapTiles` in `src/engine/gameState.ts` to deduct the exact number of selected tiles (`tilesToSwap.length`) from the player's remaining swaps (`swapsRemaining`) rather than just 1 point per turn. This enforces a strict maximum of 3 individual tile swaps per player throughout the entire game.
+    - Updated `handleSwapTileToggle` in `src/App.tsx` to dynamically check if the selected swap size has reached the player's remaining swaps limit. If so, it blocks selecting further tiles and displays a helpful error.
+    - Updated the swap button text in `src/App.tsx` to clearly read 'החלף אריחים (נותרו: swapsRemaining)' to denote remaining tile count instead of swap turns.
 
 ### 📋 Status
 * **Version**: 1.2 (Stable Web & Android)
