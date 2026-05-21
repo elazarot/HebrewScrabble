@@ -37,6 +37,12 @@
     - Modified `handleSwapTiles` in `src/engine/gameState.ts` to deduct the exact number of selected tiles (`tilesToSwap.length`) from the player's remaining swaps (`swapsRemaining`) rather than just 1 point per turn. This enforces a strict maximum of 3 individual tile swaps per player throughout the entire game.
     - Updated `handleSwapTileToggle` in `src/App.tsx` to dynamically check if the selected swap size has reached the player's remaining swaps limit. If so, it blocks selecting further tiles and displays a helpful error.
     - Updated the swap button text in `src/App.tsx` to clearly read 'החלף אריחים (נותרו: swapsRemaining)' to denote remaining tile count instead of swap turns.
+12. **Integrated Web Worker for AI Calculations (Asynchronous AI)**:
+    - Created `src/engine/aiEngine.worker.ts` which encapsulates the Scrabble AI search tree and runs it on a background thread.
+    - Inside the worker context, dynamically loads and normalizes the local JSON dictionary (`dictionary.json`) to allow O(1) lookups.
+    - Updated `src/hooks/useGame.ts` to spin up the Web Worker, pass the current board state, and listen for the calculated move asynchronously.
+    - Implemented a robust React cleanup routine in the `useEffect` trigger hook: if the game is reset, or the component unmounts while the AI is mid-calculation, the background thread is instantly terminated (`worker.terminate()`) to prevent memory leaks and save CPU resources.
+
 
 ### 📋 Status
 * **Version**: 1.2 (Stable Web & Android)
@@ -44,12 +50,11 @@
 * **Stability**: High. The Android app now successfully loads internal web assets offline/standalone, eliminating the black screen bug.
 
 ### 🚀 Next Steps (To-Do)
-1. **Web Worker Integration (Performance)**: Move the local AI engine to a background thread to prevent UI micro-stutters during the dictionary search on heavy boards.
-2. **Sound FX (Audio Feedback)**: Integrate subtle, retro-style wood clicking sounds for tile placements, and gentle chimes for moves and errors.
-3. **Firebase & Firestore Setup (Infrastructure)**: Install Firebase SDK and initialize a Firestore project. Define flat database schemas for storing matches, game status, and players.
-4. **Game Lobby & Matchmaking (Lobby System)**: Implement game lobby UI to allow creating matches, generating unique invite links/codes, and joining active online matches.
-5. **Real-time Turn Synchronization (Online Multiplayer)**: Connect `gameReducer` state transitions (PLAY, PASS, SWAP) to live Firestore document updates to support multi-player gameplay according to our offline-first conventions (syncing only on `onTurnComplete`).
-6. **PWA Support (Offline Web)**: Complete PWA service workers and manifests to allow playing the web version completely offline.
+1. **Sound FX (Audio Feedback)**: Integrate subtle, retro-style wood clicking sounds for tile placements, and gentle chimes for moves and errors.
+2. **Firebase & Firestore Setup (Infrastructure)**: Install Firebase SDK and initialize a Firestore project. Define flat database schemas for storing matches, game status, and players.
+3. **Game Lobby & Matchmaking (Lobby System)**: Implement game lobby UI to allow creating matches, generating unique invite links/codes, and joining active online matches.
+4. **Real-time Turn Synchronization (Online Multiplayer)**: Connect `gameReducer` state transitions (PLAY, PASS, SWAP) to live Firestore document updates to support multi-player gameplay according to our offline-first conventions (syncing only on `onTurnComplete`).
+5. **PWA Support (Offline Web)**: Complete PWA service workers and manifests to allow playing the web version completely offline.
 
 ## 2026-05-16 - Deployment, Responsive Layout & AI Balance
 

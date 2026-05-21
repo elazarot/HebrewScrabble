@@ -8,7 +8,7 @@ import { useReducer, useCallback, useEffect, useRef, useMemo, useState } from 'r
 import { GameState, GameAction, Tile, AIDifficulty, MoveResult } from '../types';
 import { gameReducer, createInitialGameState } from '../engine/gameState';
 import { validateAndScoreMove } from '../engine/scoreCalculator';
-import { generateAIMove } from '../engine/aiEngine';
+
 import { loadDictionary } from '../engine/wordValidator';
 import { drawTiles } from '../engine/tileBag';
 import gameConfig from '../assets/game-config.json';
@@ -52,6 +52,8 @@ export function useGame(initialDifficulty: AIDifficulty = 'EASY'): UseGameReturn
   // Trigger AI move when it's the AI's turn
   useEffect(() => {
     const currentPlayer = state.players[state.currentPlayerIndex];
+    let worker: Worker | null = null;
+    
     if (
       currentPlayer?.isAI &&
       state.phase === 'PLAYING' &&
@@ -62,17 +64,27 @@ export function useGame(initialDifficulty: AIDifficulty = 'EASY'): UseGameReturn
       
       const isFirstMove = state.moveHistory.filter(m => m.action === 'PLAY').length === 0;
       
-      generateAIMove(
-        state.board,
-        currentPlayer.rack,
-        state.aiDifficulty,
+      // Instantiate background Web Worker using Vite module workers syntax
+      worker = new Worker(
+        new URL('../engine/aiEngine.worker.ts', import.meta.url),
+        { type: 'module' }
+      );
+      
+      worker.postMessage({
+        board: state.board,
+        rack: currentPlayer.rack,
+        difficulty: state.aiDifficulty,
         isFirstMove
-      ).then((aiPlacedTiles) => {
+      });
+      
+      worker.onmessage = (e) => {
+        const aiPlacedTiles = e.data;
         isAIThinkingRef.current = false;
         
         if (!aiPlacedTiles) {
           // AI passes
           dispatch({ type: 'PASS_TURN' });
+          worker?.terminate();
           return;
         }
         
@@ -88,8 +100,18 @@ export function useGame(initialDifficulty: AIDifficulty = 'EASY'): UseGameReturn
           // If AI's move is invalid, just pass
           dispatch({ type: 'PASS_TURN' });
         }
-      });
+        
+        worker?.terminate();
+      };
     }
+    
+    // Clean up worker thread if the component unmounts or turn changes mid-calculation
+    return () => {
+      if (worker) {
+        worker.terminate();
+        isAIThinkingRef.current = false;
+      }
+    };
   }, [state.currentPlayerIndex, state.phase, isDictionaryReady]);
   
   const placeTile = useCallback((tile: Tile, row: number, col: number) => {
