@@ -217,8 +217,8 @@ const Board: React.FC<BoardProps> = ({
           <div 
             className="score-preview-badge"
             style={{
-              top: `calc((${scoreBadgePosition.row} + 1) * (var(--square-size) + var(--board-gap)) - 11px)`,
-              left: `clamp(2px, calc(${scoreBadgePosition.col} * (var(--square-size) + var(--board-gap)) - 12px), 100%)`,
+              top: `calc((${scoreBadgePosition.row} + 1) * (var(--square-size) + var(--board-gap)) - 8px)`,
+              left: `clamp(2px, calc(${scoreBadgePosition.col} * (var(--square-size) + var(--board-gap)) - 8px), 100%)`,
             }}
           >
             {currentMoveResult?.totalScore}

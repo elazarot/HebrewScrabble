@@ -161,6 +161,12 @@ const App: React.FC = () => {
   }, []);
 
   const handleLongPress = useCallback(async (words: string[]) => {
+    // Block dictionary lookup while the player is actively placing unconfirmed tiles
+    if (state.currentPlayerIndex === 0 && state.placedTiles.length > 0) {
+      showMessage('לא ניתן לחפש במילון כאשר יש אריחים לא מאושרים על הלוח!', 'error');
+      return;
+    }
+
     setIsLoadingDefinition(true);
     const defs = await fetchDefinitions(words);
     setIsLoadingDefinition(false);
@@ -169,7 +175,7 @@ const App: React.FC = () => {
     } else {
       showMessage(`לא נמצאה הגדרה עבור "${words[0]}"`, 'info');
     }
-  }, [showMessage]);
+  }, [state.currentPlayerIndex, state.placedTiles.length, showMessage]);
 
   const handleNewGame = useCallback(() => {
     setScreen('MENU');

@@ -20,6 +20,81 @@ interface AIMove {
 }
 
 /**
+ * Calculates a strategic weight score for a move (used in HARD mode).
+ * Rewards using bonus squares, penalizes opening bonus squares (especially with vowels),
+ * and rewards maintaining a balanced rack (vowels vs consonants ratio).
+ */
+function getStrategicWeight(
+  board: BoardSquare[][],
+  placedTiles: PlacedTile[],
+  rawScore: number,
+  rack: Tile[]
+): number {
+  let weight = rawScore;
+  const size = board.length;
+  const vowels = ['א', 'ה', 'ו', 'י'];
+
+  // --- 1. Bonus Utilization ---
+  // Reward using bonus squares
+  placedTiles.forEach(pt => {
+    const square = board[pt.row][pt.col];
+    if (square.bonus === 'TRIPLE_WORD') weight += 15;
+    else if (square.bonus === 'DOUBLE_WORD') weight += 10;
+    else if (square.bonus === 'TRIPLE_LETTER') weight += 6;
+    else if (square.bonus === 'DOUBLE_LETTER') weight += 3;
+  });
+
+  // --- 2. Defense: Avoid opening bonus squares to opponent ---
+  const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+  const placedSet = new Set(placedTiles.map(pt => `${pt.row},${pt.col}`));
+
+  placedTiles.forEach(pt => {
+    const isVowel = vowels.includes(pt.tile.char);
+
+    dirs.forEach(([dr, dc]) => {
+      const nr = pt.row + dr;
+      const nc = pt.col + dc;
+
+      if (nr >= 0 && nr < size && nc >= 0 && nc < size) {
+        const neighborSquare = board[nr][nc];
+        const isEmpty = neighborSquare.tile === null && !placedSet.has(`${nr},${nc}`);
+
+        if (isEmpty && neighborSquare.bonus !== 'NONE') {
+          // Empty adjacent bonus square! Apply a penalty.
+          let penalty = 0;
+          if (neighborSquare.bonus === 'TRIPLE_WORD') {
+            penalty = isVowel ? 12 : 5;
+          } else if (neighborSquare.bonus === 'DOUBLE_WORD') {
+            penalty = isVowel ? 8 : 3;
+          } else {
+            // Letter bonuses
+            penalty = isVowel ? 3 : 1;
+          }
+          weight -= penalty;
+        }
+      }
+    });
+  });
+
+  // --- 3. Rack Management (vowels vs consonants balance) ---
+  const placedIds = new Set(placedTiles.map(pt => pt.tile.id));
+  const remainingRack = rack.filter(t => !placedIds.has(t.id));
+
+  if (remainingRack.length > 0) {
+    const remainingVowels = remainingRack.filter(t => vowels.includes(t.char)).length;
+    const vowelRatio = remainingVowels / remainingRack.length;
+
+    if (vowelRatio >= 0.25 && vowelRatio <= 0.45) {
+      weight += 4; // Perfect balance bonus!
+    } else if (vowelRatio === 0 || vowelRatio === 1) {
+      weight -= 5; // Heavy imbalance penalty!
+    }
+  }
+
+  return weight;
+}
+
+/**
  * Generates an AI move based on the current board state and rack.
  * Returns placed tiles or null if the AI should pass.
  */
@@ -30,59 +105,79 @@ export function generateAIMove(
   isFirstMove: boolean
 ): Promise<PlacedTile[] | null> {
   return new Promise((resolve) => {
-    // Simulate thinking time for UX
-    const thinkTime = difficulty === 'EASY' ? 800 : 1500;
+    // Generate valid moves synchronously first
+    const moves = findAllValidMoves(board, rack, isFirstMove);
     
-      setTimeout(() => {
-        const moves = findAllValidMoves(board, rack, isFirstMove);
-        
-        // Calculate actual scores for all moves and filter valid ones
-        const scoredMoves = moves
-          .map(m => {
-            const result = validateAndScoreMove(board, m.placedTiles, isFirstMove);
-            return { ...m, score: result.totalScore, valid: result.valid };
-          })
-          .filter(m => m.valid);
-        
-        if (scoredMoves.length === 0) {
-          resolve(null); // AI passes
-          return;
-        }
-        
-        // Sort moves by score (descending)
-        scoredMoves.sort((a, b) => b.score - a.score);
-        
-        const isHard = difficulty === 'HARD';
-        
-        let chosenMove;
-        
-        if (isHard) {
-          const useOptimized = Math.random() < 0.7; // 70% chance for HARD
-          if (useOptimized) {
-            // Hard + Optimized: Pick randomly from top 5 moves
-            const topMoves = scoredMoves.slice(0, Math.min(5, scoredMoves.length));
-            chosenMove = topMoves[Math.floor(Math.random() * topMoves.length)];
-          } else {
-            // Hard + Sub-optimal: Pick from the middle of the pack
-            const midIndex = Math.floor(scoredMoves.length / 2);
-            chosenMove = scoredMoves[midIndex];
-          }
+    // Calculate actual scores and filter valid moves
+    const scoredMoves = moves
+      .map(m => {
+        const result = validateAndScoreMove(board, m.placedTiles, isFirstMove);
+        return { ...m, score: result.totalScore, valid: result.valid };
+      })
+      .filter(m => m.valid);
+    
+    if (scoredMoves.length === 0) {
+      const passTime = difficulty === 'EASY' ? 1000 : 1500;
+      setTimeout(() => resolve(null), passTime);
+      return;
+    }
+
+    // Dynamic simulated thinking delay for UX
+    let thinkTime = 1000; // default for EASY
+    if (difficulty === 'HARD') {
+      // Dynamic delay between 1.2s to 3.0s based on move search space complexity
+      thinkTime = 1200 + Math.min(1800, moves.length * 15);
+    }
+    
+    setTimeout(() => {
+      let chosenMove;
+      
+      if (difficulty === 'HARD') {
+        // --- HARD MODE: Strategic and defensive play ---
+        // Calculate strategic weights for each move
+        const strategicMoves = scoredMoves.map(m => ({
+          ...m,
+          strategicWeight: getStrategicWeight(board, m.placedTiles, m.score, rack)
+        }));
+
+        // Sort by strategic weight descending
+        strategicMoves.sort((a, b) => b.strategicWeight - a.strategicWeight);
+
+        // Pick randomly from the top 10 moves (or fewer if less available)
+        const topCount = Math.min(10, strategicMoves.length);
+        const topMoves = strategicMoves.slice(0, topCount);
+        chosenMove = topMoves[Math.floor(Math.random() * topMoves.length)];
+      } else {
+        // --- EASY MODE: Casual and human-like play ---
+        const candidates = [...scoredMoves];
+
+        // Sort by raw score descending
+        candidates.sort((a, b) => b.score - a.score);
+        const len = candidates.length;
+
+        // 20% chance to "miss" the opportunity and pick a weaker move (bottom 30% of options)
+        const isMissedOpportunity = Math.random() < 0.20;
+
+        if (isMissedOpportunity && len >= 3) {
+          const startIdx = Math.floor(len * 0.7);
+          const rangeCount = len - startIdx;
+          chosenMove = candidates[startIdx + Math.floor(Math.random() * rangeCount)];
         } else {
-          // EASY Mode
-          const useOptimized = Math.random() < 0.8; // 80% chance for EASY
-          if (useOptimized) {
-            // Easy + Optimized (for easy): Pick from bottom 5 moves (but at least 2 letters)
-            const bottomMoves = scoredMoves.slice(Math.max(0, scoredMoves.length - 5));
-            chosenMove = bottomMoves[Math.floor(Math.random() * bottomMoves.length)];
-          } else {
-            // Easy + Random boost: Pick from the top/middle
-            const luckyIndex = Math.floor(Math.random() * Math.min(10, scoredMoves.length));
-            chosenMove = scoredMoves[luckyIndex];
-          }
+          // Standard play: Pick from 30th to 60th percentile (average score range)
+          const startIdx = Math.floor(len * 0.3);
+          const endIdx = Math.floor(len * 0.6);
+          const rangeCount = Math.max(1, endIdx - startIdx + 1);
+          chosenMove = candidates[startIdx + Math.floor(Math.random() * rangeCount)];
         }
-        
-        resolve(chosenMove.placedTiles);
-      }, thinkTime);
+
+        // Fallback safety check
+        if (!chosenMove) {
+          chosenMove = candidates[0];
+        }
+      }
+      
+      resolve(chosenMove.placedTiles);
+    }, thinkTime);
   });
 }
 

@@ -234,12 +234,16 @@ body::before {
   left: 50%;
   transform: translateX(-50%);
   padding: var(--space-3) var(--space-6);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-md);
   font-weight: 600;
   box-shadow: var(--shadow-lg);
   z-index: 1000;
   animation: slideUp 0.3s var(--ease-out);
-  white-space: nowrap;
+  max-width: 90%;
+  width: max-content;
+  text-align: center;
+  white-space: normal;
+  word-wrap: break-word;
 }
 
 .message-bar--success { background: hsl(140, 70%, 90%); color: hsl(140, 50%, 15%); border: 1px solid hsl(140, 50%, 70%); }
