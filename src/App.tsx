@@ -605,6 +605,7 @@ const App: React.FC = () => {
       initialPvpState.players[0].id = myUid;
       
       await createOnlineMatch(code, code, isPublic, name, myUid, initialPvpState);
+      loadGame(initialPvpState);
       
       if (isPublic) {
         // For Public room: go directly to the GAME screen (Play-First)
