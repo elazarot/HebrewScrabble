@@ -695,14 +695,16 @@ const App: React.FC = () => {
                 const matchSnap = await getDoc(matchRef);
                 if (matchSnap.exists()) {
                   const matchData = matchSnap.data();
-                  const updatedPlayers = [...matchData.players];
-                  const firestoreLocalIdx = matchData.players[1]?.uid === myUid ? 1 : 0;
-                  if (updatedPlayers[firestoreLocalIdx]) {
-                    updatedPlayers[firestoreLocalIdx].name = newName;
-                    await updateDoc(matchRef, {
-                      players: updatedPlayers,
-                      updatedAt: Timestamp.now()
-                    });
+                  if (matchData && Array.isArray(matchData.players)) {
+                    const updatedPlayers = [...matchData.players];
+                    const firestoreLocalIdx = matchData.players[1]?.uid === myUid ? 1 : 0;
+                    if (updatedPlayers[firestoreLocalIdx]) {
+                      updatedPlayers[firestoreLocalIdx].name = newName;
+                      await updateDoc(matchRef, {
+                        players: updatedPlayers,
+                        updatedAt: Timestamp.now()
+                      });
+                    }
                   }
                 }
               } catch (err) {
