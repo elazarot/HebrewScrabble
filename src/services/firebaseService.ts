@@ -25,12 +25,12 @@ import { GameState, MoveResult } from '../types';
 // To use your real project: create a Firebase project, enable Firestore & Anonymous Auth, 
 // and populate these variables in a `.env` file or paste them here directly.
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "placeholder-api-key",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "hebrew-scrabble.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "hebrew-scrabble",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "hebrew-scrabble.appspot.com",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "placeholder-sender-id",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "placeholder-app-id"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAJiOHpoMo7O9YPb2LL7IDgh5v9BGYiE-8",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "hebrewscrabble.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "hebrewscrabble",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "hebrewscrabble.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "696772776771",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:696772776771:web:6a5342a7c08b89b02a55f6"
 };
 
 // Initialize Firebase App

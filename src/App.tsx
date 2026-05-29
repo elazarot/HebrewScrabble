@@ -562,34 +562,21 @@ const App: React.FC = () => {
           forfeitedBy: myUid,
           updatedAt: Timestamp.now()
         });
-
-        // Update locally in localStorage instead of deleting it immediately,
-        // so the user can see they forfeited, and then delete the card when they want.
-        const saved = localStorage.getItem('scrabble_saved_games');
-        if (saved) {
-          const parsed: Record<string, GameState> = JSON.parse(saved);
-          if (parsed[state.id]) {
-            parsed[state.id].phase = 'GAME_OVER';
-            parsed[state.id].forfeitedBy = myUid;
-            parsed[state.id].updatedAt = Date.now();
-            localStorage.setItem('scrabble_saved_games', JSON.stringify(parsed));
-          }
-        }
       } catch (e) {
         console.error("Error forfeiting online game:", e);
       }
-    } else {
-      // For PvE games, we can just delete it from localStorage on forfeit
-      try {
-        const saved = localStorage.getItem('scrabble_saved_games');
-        if (saved) {
-          const parsed: Record<string, GameState> = JSON.parse(saved);
-          delete parsed[state.id];
-          localStorage.setItem('scrabble_saved_games', JSON.stringify(parsed));
-        }
-      } catch (e) {
-        console.error("Error deleting PVE game on forfeit:", e);
+    }
+
+    // Delete the game from localStorage immediately for the forfeiting player
+    try {
+      const saved = localStorage.getItem('scrabble_saved_games');
+      if (saved) {
+        const parsed: Record<string, GameState> = JSON.parse(saved);
+        delete parsed[state.id];
+        localStorage.setItem('scrabble_saved_games', JSON.stringify(parsed));
       }
+    } catch (e) {
+      console.error("Error deleting game on forfeit:", e);
     }
 
     // Reset the internal hook state to a clean blank game to avoid resurrection
