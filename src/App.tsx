@@ -196,7 +196,7 @@ const App: React.FC = () => {
     if (!myUid) return;
     
     const otherOnlineGames = savedGamesList.filter(
-      g => g.gameMode === 'PVP' && g.id?.length === 6 && g.id !== state.id
+      g => g.gameMode === 'PVP' && g.id?.length === 6 && (screen === 'MENU' || g.id !== state.id)
     );
     
     // Clean up outdated listeners
@@ -256,7 +256,7 @@ const App: React.FC = () => {
         }
       }
     }
-  }, [savedGamesList, state.id, myUid, refreshSavedGames]);
+  }, [savedGamesList, state.id, myUid, refreshSavedGames, screen]);
 
   // 5. Active GAME Sync Listener - listens to Firestore while actively playing an online PvP game
   const isOnlineGame = state.gameMode === 'PVP' && state.id?.length === 6;
@@ -402,6 +402,15 @@ const App: React.FC = () => {
         try {
           const nextState = gameReducer(state, { type: 'SUBMIT_TURN', moveResult: result });
           await submitOnlineTurn(state.id, nextState, 'PLAY', result, myUid, nextState.players[localPlayerIndex].rack);
+          
+          // Asynchronous PvP: if opponent has not joined yet, return host to the Home Screen
+          const opponentPending = !state.players[opponentPlayerIndex]?.id || state.players[opponentPlayerIndex]?.id === 'player-2';
+          if (opponentPending) {
+            setTimeout(() => {
+              setScreen('MENU');
+              showMessage("המהלך נשלח בהצלחה! החדר ממתין ליריב בלוח הציבורי.", "success");
+            }, 1500);
+          }
         } catch (e) {
           console.error("Error syncing online turn submit:", e);
           showMessage("שגיאה בסנכרון המהלך ברשת.", "error");
@@ -412,7 +421,7 @@ const App: React.FC = () => {
       const errorMsg = result.errors.length > 0 ? result.errors.join('. ') : 'מהלך לא תקין';
       showMessage(errorMsg, 'error');
     }
-  }, [submitTurn, showMessage, isOnlineGame, state, myUid, localPlayerIndex]);
+  }, [submitTurn, showMessage, isOnlineGame, state, myUid, localPlayerIndex, opponentPlayerIndex]);
 
   const handleRecall = useCallback(() => {
     soundService.playTileRecall();
@@ -580,9 +589,18 @@ const App: React.FC = () => {
       
       await createOnlineMatch(code, code, isPublic, name, myUid, initialPvpState);
       
-      setLobbyCode(code);
-      setIsLobbyHost(true);
-      setScreen('LOBBY');
+      if (isPublic) {
+        // For Public room: go directly to the GAME screen (Play-First)
+        setLobbyCode(null);
+        setIsLobbyHost(false);
+        setScreen('GAME');
+        showMessage("החדר הציבורי נוצר! שחק את התור הראשון שלך.", "success");
+      } else {
+        // For Private room: show lobby so they can copy and share the code
+        setLobbyCode(code);
+        setIsLobbyHost(true);
+        setScreen('LOBBY');
+      }
     } catch (error) {
       console.error("Error creating online match:", error);
       showMessage("שגיאה בפתיחת החדר. אנא נסה שנית.", "error");
@@ -642,6 +660,7 @@ const App: React.FC = () => {
         onCreateOnlineRoom={handleCreateOnlineRoom}
         onJoinOnlineRoom={handleJoinOnlineRoom}
         onJoinPublicLobby={handleJoinPublicLobby}
+        myUid={myUid}
       />
     );
   }

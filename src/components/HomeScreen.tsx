@@ -12,6 +12,7 @@ interface HomeScreenProps {
   onCreateOnlineRoom?: (isPublic: boolean, name: string) => void;
   onJoinOnlineRoom?: (code: string, name: string) => void;
   onJoinPublicLobby?: (lobby: any) => void;
+  myUid?: string;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ 
@@ -22,7 +23,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   publicLobbies = [],
   onCreateOnlineRoom,
   onJoinOnlineRoom,
-  onJoinPublicLobby
+  onJoinPublicLobby,
+  myUid
 }) => {
   const [showPVEModal, setShowPVEModal] = useState(false);
   const [isMuted, setIsMuted] = useState(soundService.getMute());
@@ -526,8 +528,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 scrollbarWidth: 'thin'
               }}>
                 {savedGames.map((game) => {
-                  const human = game.players[0];
-                  const ai = game.players[1];
+                  const isPVP = game.gameMode === 'PVP';
+                  const localPlayerIndex = (isPVP && game.players[1]?.id === myUid) ? 1 : 0;
+                  const opponentPlayerIndex = localPlayerIndex === 0 ? 1 : 0;
+
+                  const localPlayer = game.players[localPlayerIndex];
+                  const opponentPlayer = game.players[opponentPlayerIndex];
+
                   const difficultyText = game.aiDifficulty === 'HARD' ? 'קשה' : 'קלה';
                   const difficultyColor = game.aiDifficulty === 'HARD' ? 'var(--color-danger)' : 'var(--color-success)';
                   const formattedDate = new Date(game.updatedAt).toLocaleDateString('he-IL', {
@@ -536,6 +543,55 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     hour: '2-digit',
                     minute: '2-digit'
                   });
+
+                  // Title
+                  let cardTitle = "משחק מול המחשב";
+                  if (isPVP) {
+                    if (opponentPlayer && opponentPlayer.id !== 'player-2' && opponentPlayer.name !== 'ממתין לשחקן...') {
+                      cardTitle = `משחק רשת מול ${opponentPlayer.name}`;
+                    } else {
+                      cardTitle = "משחק רשת - ממתין ליריב ⏳";
+                    }
+                  }
+
+                  // Score Labels
+                  const localLabel = `${localPlayer?.name || 'שחקן'} (אתה)`;
+                  const opponentLabel = isPVP ? (opponentPlayer?.name || 'יריב') : 'מחשב';
+
+                  // Turn Indicator
+                  const isMyTurn = game.phase === 'PLAYING' && game.currentPlayerIndex === localPlayerIndex;
+
+                  const turnBadge = isMyTurn ? (
+                    <span style={{
+                      fontSize: '11px',
+                      fontWeight: 'bold',
+                      color: 'var(--color-success)',
+                      background: 'rgba(46, 125, 50, 0.08)',
+                      border: '1.5px solid var(--color-success)',
+                      padding: '2px 8px',
+                      borderRadius: '12px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}>
+                      תורך כעת! 🟢
+                    </span>
+                  ) : (
+                    <span style={{
+                      fontSize: '11px',
+                      fontWeight: 'bold',
+                      color: 'var(--color-text-secondary)',
+                      background: 'rgba(0, 0, 0, 0.03)',
+                      border: '1px solid rgba(0, 0, 0, 0.1)',
+                      padding: '2px 8px',
+                      borderRadius: '12px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}>
+                      תור היריב ⏳
+                    </span>
+                  );
 
                   return (
                     <div 
@@ -564,25 +620,28 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                       }}
                     >
                       {/* Game Details (occupies the right and center in RTL) */}
-                      <div style={{ flex: 1, textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <div style={{ flex: 1, textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
                           <span style={{ fontWeight: 'bold', fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)' }}>
-                            משחק מול המחשב
+                            {cardTitle}
                           </span>
-                          <span style={{ 
-                            fontSize: '10px', 
-                            fontWeight: 'bold', 
-                            color: difficultyColor,
-                            border: `1px solid ${difficultyColor}`,
-                            padding: '1px 4px',
-                            borderRadius: '3px',
-                            background: 'white'
-                          }}>
-                            {difficultyText}
-                          </span>
+                          {!isPVP && (
+                            <span style={{ 
+                              fontSize: '10px', 
+                              fontWeight: 'bold', 
+                              color: difficultyColor,
+                              border: `1px solid ${difficultyColor}`,
+                              padding: '1px 4px',
+                              borderRadius: '3px',
+                              background: 'white'
+                            }}>
+                              {difficultyText}
+                            </span>
+                          )}
+                          {game.phase === 'PLAYING' && turnBadge}
                         </div>
                         <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
-                          ניקוד: <strong style={{ color: 'var(--color-accent)' }}>{human.score}</strong> (שחקן) לעומת <strong style={{ color: 'var(--color-text-primary)' }}>{ai.score}</strong> (AI)
+                          ניקוד: <strong style={{ color: 'var(--color-accent)' }}>{localPlayer?.score ?? 0}</strong> ({localLabel}) לעומת <strong style={{ color: 'var(--color-text-primary)' }}>{opponentPlayer?.score ?? 0}</strong> ({opponentLabel})
                         </div>
                         <div style={{ fontSize: '9px', color: 'var(--color-text-muted)', marginTop: '1px' }}>
                           פעילות אחרונה: {formattedDate}
