@@ -22,7 +22,8 @@ interface UseGameReturn {
   submitTurn: () => MoveResult;
   passTurn: () => void;
   swapTiles: (tiles: Tile[]) => void;
-  resetGame: (difficulty: AIDifficulty) => void;
+  resetGame: (difficulty: AIDifficulty, gameMode?: 'PVE' | 'PVP', existingGameId?: string) => void;
+  loadGame: (savedState: GameState) => void;
   isCurrentPlayerHuman: boolean;
   isAIThinking: boolean;
   lastMoveResult: MoveResult | null;
@@ -33,7 +34,26 @@ interface UseGameReturn {
 export function useGame(initialDifficulty: AIDifficulty = 'EASY'): UseGameReturn {
   const [state, dispatch] = useReducer(
     gameReducer,
-    createInitialGameState(gameConfig, initialDifficulty)
+    createInitialGameState(gameConfig, initialDifficulty),
+    (initialState) => {
+      try {
+        const saved = localStorage.getItem('scrabble_saved_games');
+        if (saved) {
+          const parsed: Record<string, GameState> = JSON.parse(saved);
+          const activeGames = Object.values(parsed).filter(
+            (g) => g && g.phase === 'PLAYING' && g.id
+          );
+          if (activeGames.length > 0) {
+            // Sort by updatedAt descending to find the most recent active game
+            activeGames.sort((a, b) => b.updatedAt - a.updatedAt);
+            return activeGames[0];
+          }
+        }
+      } catch (e) {
+        console.error("Error reading initial saved games:", e);
+      }
+      return initialState;
+    }
   );
   
   const [isDictionaryReady, setIsDictionaryReady] = useState(false);
@@ -158,11 +178,32 @@ export function useGame(initialDifficulty: AIDifficulty = 'EASY'): UseGameReturn
     dispatch({ type: 'SWAP_TILES', tilesToSwap: tiles, newTiles: drawn });
   }, [state.tileBag]);
   
-  const resetGame = useCallback((difficulty: AIDifficulty) => {
+  const resetGame = useCallback((difficulty: AIDifficulty, gameMode: 'PVE' | 'PVP' = 'PVE', existingGameId?: string) => {
     isAIThinkingRef.current = false;
     lastMoveResultRef.current = null;
-    dispatch({ type: 'RESET_GAME', config: gameConfig, aiDifficulty: difficulty });
+    const newGameId = existingGameId || `game_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+    dispatch({ type: 'RESET_GAME', config: gameConfig, aiDifficulty: difficulty, gameMode, gameId: newGameId });
   }, []);
+
+  const loadGame = useCallback((savedState: GameState) => {
+    isAIThinkingRef.current = false;
+    lastMoveResultRef.current = null;
+    dispatch({ type: 'LOAD_GAME', savedState });
+  }, []);
+
+  // Auto-save game state whenever it changes
+  useEffect(() => {
+    if (state && state.id) {
+      try {
+        const saved = localStorage.getItem('scrabble_saved_games');
+        const parsed: Record<string, GameState> = saved ? JSON.parse(saved) : {};
+        parsed[state.id] = state;
+        localStorage.setItem('scrabble_saved_games', JSON.stringify(parsed));
+      } catch (e) {
+        console.error("Error auto-saving game state:", e);
+      }
+    }
+  }, [state]);
   
   const currentMoveResult = useMemo(() => {
     if (state.placedTiles.length === 0) return null;
@@ -180,6 +221,7 @@ export function useGame(initialDifficulty: AIDifficulty = 'EASY'): UseGameReturn
     passTurn,
     swapTiles,
     resetGame,
+    loadGame,
     isCurrentPlayerHuman,
     isAIThinking: isAIThinkingRef.current,
     lastMoveResult: lastMoveResultRef.current,

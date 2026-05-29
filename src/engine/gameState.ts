@@ -22,7 +22,9 @@ import { createTileBag, drawTiles, shuffleTiles } from './tileBag';
  */
 export function createInitialGameState(
   config: GameConfig,
-  aiDifficulty: AIDifficulty = 'EASY'
+  aiDifficulty: AIDifficulty = 'EASY',
+  gameMode: 'PVE' | 'PVP' = 'PVE',
+  gameId: string = `game_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`
 ): GameState {
   const board = createEmptyBoard(config.game_settings.board_size);
   let tileBag = createTileBag(config);
@@ -31,16 +33,20 @@ export function createInitialGameState(
   const draw1 = drawTiles(tileBag, config.game_settings.tiles_per_player);
   tileBag = draw1.remaining;
   
-  // Draw tiles for player 2 (AI)
+  // Draw tiles for player 2 (AI or human)
   const draw2 = drawTiles(tileBag, config.game_settings.tiles_per_player);
   tileBag = draw2.remaining;
   
+  const isPVP = gameMode === 'PVP';
+  
   return {
+    id: gameId,
+    updatedAt: Date.now(),
     board,
     players: [
       {
         id: 'player-1',
-        name: 'שחקן',
+        name: isPVP ? 'שחקן 1' : 'שחקן',
         score: 0,
         rack: draw1.drawn,
         isAI: false,
@@ -48,11 +54,11 @@ export function createInitialGameState(
         swapsRemaining: 3,
       },
       {
-        id: 'ai-player',
-        name: 'מחשב',
+        id: isPVP ? 'player-2' : 'ai-player',
+        name: isPVP ? 'שחקן 2' : 'מחשב',
         score: 0,
         rack: draw2.drawn,
-        isAI: true,
+        isAI: !isPVP,
         consecutivePasses: 0,
         swapsRemaining: 3,
       },
@@ -64,7 +70,7 @@ export function createInitialGameState(
     placedTiles: [],
     moveHistory: [],
     turnNumber: 1,
-    gameMode: 'PVE',
+    gameMode,
     aiDifficulty,
   };
 }
@@ -74,40 +80,62 @@ export function createInitialGameState(
  * Pure function: no side effects, no API calls.
  */
 export function gameReducer(state: GameState, action: GameAction): GameState {
+  let newState = state;
   switch (action.type) {
     case 'PLACE_TILE':
-      return handlePlaceTile(state, action.tile, action.row, action.col);
+      newState = handlePlaceTile(state, action.tile, action.row, action.col);
+      break;
     
     case 'REMOVE_PLACED_TILE':
-      return handleRemovePlacedTile(state, action.row, action.col);
+      newState = handleRemovePlacedTile(state, action.row, action.col);
+      break;
     
     case 'RECALL_TILES':
-      return handleRecallTiles(state);
+      newState = handleRecallTiles(state);
+      break;
     
     case 'SHUFFLE_RACK':
-      return handleShuffleRack(state);
+      newState = handleShuffleRack(state);
+      break;
     
     case 'SUBMIT_TURN':
-      return handleSubmitTurn(state, action.moveResult);
+      newState = handleSubmitTurn(state, action.moveResult);
+      break;
     
     case 'PASS_TURN':
-      return handlePassTurn(state);
+      newState = handlePassTurn(state);
+      break;
     
     case 'SWAP_TILES':
-      return handleSwapTiles(state, action.tilesToSwap, action.newTiles);
+      newState = handleSwapTiles(state, action.tilesToSwap, action.newTiles);
+      break;
     
     case 'AI_MOVE':
-      return handleAIMove(state, action.placedTiles, action.moveResult);
+      newState = handleAIMove(state, action.placedTiles, action.moveResult);
+      break;
     
     case 'SET_BLANK_LETTER':
-      return handleSetBlankLetter(state, action.tileId, action.char);
+      newState = handleSetBlankLetter(state, action.tileId, action.char);
+      break;
+    
+    case 'LOAD_GAME':
+      newState = action.savedState;
+      break;
     
     case 'RESET_GAME':
-      return createInitialGameState(action.config, action.aiDifficulty);
+      newState = createInitialGameState(action.config, action.aiDifficulty, action.gameMode || 'PVE', action.gameId);
+      break;
     
     default:
       return state;
   }
+
+  // Automatically update the updatedAt timestamp whenever the state changes (and it's not a LOAD_GAME which already has a valid timestamp)
+  if (newState !== state && action.type !== 'LOAD_GAME') {
+    newState = { ...newState, updatedAt: Date.now() };
+  }
+
+  return newState;
 }
 
 /** Places a tile from the player's rack onto the board */

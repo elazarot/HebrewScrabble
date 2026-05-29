@@ -72,6 +72,8 @@ export type AIDifficulty = 'EASY' | 'HARD';
 
 /** The complete game state - single source of truth for the game */
 export interface GameState {
+  id: string;
+  updatedAt: number;
   board: BoardSquare[][];
   players: Player[];
   currentPlayerIndex: number;
@@ -126,4 +128,5 @@ export type GameAction =
   | { type: 'SHUFFLE_RACK' }
   | { type: 'AI_MOVE'; placedTiles: PlacedTile[]; moveResult: MoveResult }
   | { type: 'SET_BLANK_LETTER'; tileId: string; char: string }
-  | { type: 'RESET_GAME'; config: GameConfig; aiDifficulty: AIDifficulty };
+  | { type: 'LOAD_GAME'; savedState: GameState }
+  | { type: 'RESET_GAME'; config: GameConfig; aiDifficulty: AIDifficulty; gameMode?: 'PVE' | 'PVP'; gameId: string };

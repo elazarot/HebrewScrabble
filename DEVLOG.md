@@ -1,5 +1,46 @@
 # DEVLOG - Hebrew Scrabble
 
+## 2026-05-29 - GPLv3 Compliance, Standalone Production Build & Gameplay Enhancements
+
+### 🛠️ What was done
+1. **Added Licensing Credits in Settings**:
+   - Updated `src/components/SettingsModal.tsx` to display a beautiful, RTL-aligned credit section giving official attribution to the **Hspell** project (version 1.4) and declaring that the app and the dictionary are distributed under the **GNU GPLv3** license, complete with styled links to Hspell and the GPLv3 license terms.
+2. **Removed Local License File**:
+   - Removed the generated local `LICENSE` file as requested, providing step-by-step instructions for the user to add it directly using GitHub's built-in license template tool.
+3. **Disabled Live-Reload Server**:
+   - Commented out the server block in `capacitor.config.ts` to disable live-reload and revert the app to offline standalone operation.
+4. **Stopped Dev Server**:
+   - Stopped the background Vite development server on port 3000.
+5. **Cabled Standalone Android Compilation & Deployment**:
+   - Authorized connection via USB cable, built optimized production static assets (`npm run build`), synchronized them into native assets (`npx cap sync`), compiled the standalone APK via Gradle (`gradlew.bat installDebug`), and successfully deployed it on the phone. This bundles the 5.6MB local dictionary directly inside the phone's memory to eliminate any dynamic network loading delays.
+6. **Implemented 10-Second Dictionary Timeout**:
+   - Wrapped `fetchDefinitions` calls in `src/App.tsx` with a `Promise.race` 10-second timeout. If the fetch hangs due to poor connection, the loading state is cancelled, and a friendly Hebrew connection error toast is shown, allowing the player to resume the game immediately.
+7. **Standardized Tile Distribution to 100 Tiles**:
+   - Updated `src/assets/game-config.json` to set `total_tiles` to 100, removing 2 'ו' (10 -> 8), 1 'ת' (9 -> 8), and 1 'ר' (8 -> 7) to perfectly align with standard Hebrew Scrabble rules while maintaining complete single-source-of-truth integrity.
+8. **Confirmed Manual LICENSE File**:
+   - Updated records to confirm the manual inclusion of the `LICENSE` file in the GitHub repository by the user.
+9. **Implemented Dynamic Synthesized Sound FX**:
+   - Created `src/services/soundService.ts` utilizing the high-performance **Web Audio API** to dynamically synthesize realistic physical sound effects (crisp wood clack for tile placement/selection, slide scrape sound for recalls, shuffle sequence, C-Major arpeggiated success chime, and low warning buzz for errors). Integrated audio triggers in all React handlers in `src/App.tsx` and automated play sounds for AI turns.
+10. **Designed & Built Premium Home Screen (Main Menu)**:
+    - Designed and implemented a stunning glassmorphic, wooden-tile-themed start screen in `src/components/HomeScreen.tsx` fitting perfectly within `100vh`. Added responsive, touch-friendly selectors for PVE modes (Easy/Hard) and a coming-soon badge for Online PvP.
+11. **De-scoped Local PvP Mode**:
+    - Based on architectural review of incomplete-information gameplay (hidden rack mechanics), we decided to cancel the local PvP "Pass & Play" mode. Keeping racks open on a single screen compromised strategy, while full screen-cover transition modals would feel clunky. Removed the local PvP option from the Home Screen menu to focus resources on PVE (vs computer) and future online real-time multiplayer.
+12. **Added Persistent Sound Mute Option**:
+    - Embedded volume controllers on both the Home Screen and within the Settings Modal, utilizing LocalStorage to persist the player's mute state across game reloads.
+13. **Activated Live Mode**:
+    - Re-activated the background Vite development server in live mode on port 3000 (`http://localhost:3000` / `http://192.168.1.201:3000`) for real-time local network and web testing.
+
+### 📋 Status
+* **Version**: 1.5 (Stable Web & Android, Dynamic Audio & Premium Main Menu)
+* **Build**: Live development server active on port 3000, and Live-Reload APK compiled and launched successfully on cabled phone!
+* **Licensing**: Hspell/GPLv3 credits active in Settings modal, and LICENSE file is present in repository.
+* **Gameplay**: Focuses on PvE (Easy/Hard) modes with fully synthesized physical sound effects, and online PvP planned next.
+
+### 🚀 Next Steps (To-Do)
+1. **Local Auto-Save (State Persistence)**: Implement serialization/deserialization to automatically save local PvE game state to LocalStorage/Capacitor Preferences so matches survive unexpected app closes.
+2. **Firebase & Firestore Setup (Infrastructure)**: Install Firebase SDK and define flat schemas for storing matches.
+3. **Game Lobby & Matchmaking (Lobby System)**: Implement game lobby UI for creating matches, generating invite codes, and joining active online matches.
+
 ## 2026-05-21 - Android Black Screen Fix & Capacitor Configuration
 
 ### 🛠️ What was done
