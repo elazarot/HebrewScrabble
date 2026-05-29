@@ -196,7 +196,7 @@ const App: React.FC = () => {
     if (!myUid) return;
     
     const otherOnlineGames = savedGamesList.filter(
-      g => g.gameMode === 'PVP' && g.id.length === 6 && g.id !== state.id
+      g => g.gameMode === 'PVP' && g.id?.length === 6 && g.id !== state.id
     );
     
     // Clean up outdated listeners
@@ -259,7 +259,7 @@ const App: React.FC = () => {
   }, [savedGamesList, state.id, myUid, refreshSavedGames]);
 
   // 5. Active GAME Sync Listener - listens to Firestore while actively playing an online PvP game
-  const isOnlineGame = state.gameMode === 'PVP' && state.id.length === 6;
+  const isOnlineGame = state.gameMode === 'PVP' && state.id?.length === 6;
   useEffect(() => {
     if (screen === 'GAME' && isOnlineGame && myUid) {
       const unsubscribe = listenToMatch(state.id, (matchData) => {
@@ -323,10 +323,11 @@ const App: React.FC = () => {
   }, [message]);
 
   // Trigger sound when move history changes (represents a successful play by AI or second player)
-  const lastMoveHistoryLengthRef = useRef(state.moveHistory.length);
+  const lastMoveHistoryLengthRef = useRef(state.moveHistory?.length || 0);
   useEffect(() => {
-    if (state.moveHistory.length > lastMoveHistoryLengthRef.current) {
-      const lastMove = state.moveHistory[state.moveHistory.length - 1];
+    const moveHistoryLength = state.moveHistory?.length || 0;
+    if (moveHistoryLength > lastMoveHistoryLengthRef.current) {
+      const lastMove = state.moveHistory?.[moveHistoryLength - 1];
       // Only play AI/Second Player sound if it's not the active local player's manual click triggering it
       if (lastMove && lastMove.playerIndex !== localPlayerIndex) {
         if (lastMove.action === 'PLAY') {
@@ -335,7 +336,7 @@ const App: React.FC = () => {
           soundService.playTileRecall();
         }
       }
-      lastMoveHistoryLengthRef.current = state.moveHistory.length;
+      lastMoveHistoryLengthRef.current = moveHistoryLength;
     }
   }, [state.moveHistory, localPlayerIndex]);
 
@@ -768,7 +769,7 @@ const App: React.FC = () => {
   }
 
   // ===== GAME SCREEN =====
-  const lastMove = state.moveHistory[state.moveHistory.length - 1];
+  const lastMove = (state.moveHistory && state.moveHistory.length > 0) ? state.moveHistory[state.moveHistory.length - 1] : null;
   let lastMoveText = '';
   if (lastMove && lastMove.action === 'PLAY' && lastMove.words && lastMove.words.length > 0) {
     const isLocalPlayerMove = lastMove.playerIndex === localPlayerIndex;

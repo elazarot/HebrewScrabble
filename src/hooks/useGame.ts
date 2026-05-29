@@ -46,7 +46,14 @@ export function useGame(initialDifficulty: AIDifficulty = 'EASY'): UseGameReturn
           if (activeGames.length > 0) {
             // Sort by updatedAt descending to find the most recent active game
             activeGames.sort((a, b) => b.updatedAt - a.updatedAt);
-            return activeGames[0];
+            const loaded = activeGames[0];
+            return {
+              ...loaded,
+              moveHistory: loaded.moveHistory || [],
+              gameMode: loaded.gameMode || 'PVE',
+              placedTiles: loaded.placedTiles || [],
+              turnPhase: loaded.turnPhase || 'PLACING'
+            };
           }
         }
       } catch (e) {
@@ -82,7 +89,7 @@ export function useGame(initialDifficulty: AIDifficulty = 'EASY'): UseGameReturn
     ) {
       isAIThinkingRef.current = true;
       
-      const isFirstMove = state.moveHistory.filter(m => m.action === 'PLAY').length === 0;
+      const isFirstMove = !state.moveHistory || state.moveHistory.filter(m => m.action === 'PLAY').length === 0;
       
       // Instantiate background Web Worker using Vite module workers syntax
       worker = new Worker(
@@ -155,7 +162,7 @@ export function useGame(initialDifficulty: AIDifficulty = 'EASY'): UseGameReturn
   }, []);
   
   const submitTurn = useCallback((): MoveResult => {
-    const isFirstMove = state.moveHistory.filter(m => m.action === 'PLAY').length === 0;
+    const isFirstMove = !state.moveHistory || state.moveHistory.filter(m => m.action === 'PLAY').length === 0;
     const moveResult = validateAndScoreMove(state.board, state.placedTiles, isFirstMove);
     
     lastMoveResultRef.current = moveResult;
@@ -207,7 +214,7 @@ export function useGame(initialDifficulty: AIDifficulty = 'EASY'): UseGameReturn
   
   const currentMoveResult = useMemo(() => {
     if (state.placedTiles.length === 0) return null;
-    const isFirstMove = state.moveHistory.filter(m => m.action === 'PLAY').length === 0;
+    const isFirstMove = !state.moveHistory || state.moveHistory.filter(m => m.action === 'PLAY').length === 0;
     return validateAndScoreMove(state.board, state.placedTiles, isFirstMove);
   }, [state.board, state.placedTiles, state.moveHistory]);
 

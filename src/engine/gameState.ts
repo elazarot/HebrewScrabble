@@ -119,7 +119,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       break;
     
     case 'LOAD_GAME':
-      newState = action.savedState;
+      newState = {
+        ...action.savedState,
+        moveHistory: action.savedState.moveHistory || [],
+        gameMode: action.savedState.gameMode || 'PVE',
+        placedTiles: action.savedState.placedTiles || [],
+        turnPhase: action.savedState.turnPhase || 'PLACING'
+      };
       break;
     
     case 'RESET_GAME':
