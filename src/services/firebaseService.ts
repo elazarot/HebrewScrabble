@@ -169,6 +169,13 @@ export async function submitOnlineTurn(
 ): Promise<void> {
   const matchRef = doc(db, 'matches', lobbyCode);
 
+  const p0 = newState.players[0];
+  const p1 = newState.players[1];
+  const opponentIndex = p0.id === playerUid ? 1 : 0;
+  const opponent = newState.players[opponentIndex];
+  
+  const isOpponentJoined = opponent && opponent.id !== 'player-2' && opponent.id !== null && opponent.id !== '';
+
   const updateData: Record<string, any> = {
     updatedAt: Timestamp.now(),
     currentPlayerIndex: newState.currentPlayerIndex,
@@ -177,21 +184,23 @@ export async function submitOnlineTurn(
     tileBag: newState.tileBag,
     board: JSON.stringify(newState.board),
     phase: newState.phase, // WAITING | PLAYING | GAME_OVER
-    status: newState.phase === 'GAME_OVER' ? 'GAME_OVER' : 'PLAYING',
+    status: newState.phase === 'GAME_OVER' 
+      ? 'GAME_OVER' 
+      : (isOpponentJoined ? 'PLAYING' : 'WAITING'),
     
     // Sync player scores safely by updating the players array
     players: [
       {
-        uid: newState.players[0].id,
-        name: newState.players[0].name,
-        score: newState.players[0].score,
-        isReady: true
+        uid: p0.id === 'player-2' ? null : p0.id,
+        name: p0.id === 'player-2' ? 'ממתין לשחקן...' : p0.name,
+        score: p0.score,
+        isReady: p0.id !== 'player-2'
       },
       {
-        uid: newState.players[1].id,
-        name: newState.players[1].name,
-        score: newState.players[1].score,
-        isReady: true
+        uid: p1.id === 'player-2' ? null : p1.id,
+        name: p1.id === 'player-2' ? 'ממתין לשחקן...' : p1.name,
+        score: p1.score,
+        isReady: p1.id !== 'player-2'
       }
     ],
 
@@ -302,6 +311,7 @@ export function convertFirestoreMatchToGameState(matchData: any, myUid: string):
     moveHistory: matchData.moveHistory || [],
     turnNumber: matchData.turnNumber,
     gameMode: 'PVP',
-    aiDifficulty: 'EASY'
+    aiDifficulty: 'EASY',
+    forfeitedBy: matchData.forfeitedBy || null
   };
 }

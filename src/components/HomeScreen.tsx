@@ -13,6 +13,7 @@ interface HomeScreenProps {
   onJoinOnlineRoom?: (code: string, name: string) => void;
   onJoinPublicLobby?: (lobby: any) => void;
   myUid?: string;
+  onUpdatePlayerName?: (name: string) => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ 
@@ -24,7 +25,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onCreateOnlineRoom,
   onJoinOnlineRoom,
   onJoinPublicLobby,
-  myUid
+  myUid,
+  onUpdatePlayerName
 }) => {
   const [showPVEModal, setShowPVEModal] = useState(false);
   const [isMuted, setIsMuted] = useState(soundService.getMute());
@@ -151,7 +153,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <input 
               type="text" 
               value={playerName}
-              onChange={(e) => setPlayerName(e.target.value.substring(0, 12))}
+              onChange={(e) => {
+                const newName = e.target.value.substring(0, 12);
+                setPlayerName(newName);
+                localStorage.setItem('scrabble_player_name', newName);
+                if (onUpdatePlayerName) onUpdatePlayerName(newName);
+              }}
               style={{
                 width: '100%',
                 padding: '10px 14px',
@@ -547,7 +554,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   // Title
                   let cardTitle = "משחק מול המחשב";
                   if (isPVP) {
-                    if (opponentPlayer && opponentPlayer.id !== 'player-2' && opponentPlayer.name !== 'ממתין לשחקן...') {
+                    if (game.phase === 'GAME_OVER' && game.forfeitedBy) {
+                      if (game.forfeitedBy === myUid) {
+                        cardTitle = "🏳️ פרשת מהמשחק";
+                      } else {
+                        cardTitle = "🏆 ניצחון טכני (היריב פרש!)";
+                      }
+                    } else if (opponentPlayer && opponentPlayer.id !== 'player-2' && opponentPlayer.name !== 'ממתין לשחקן...') {
                       cardTitle = `משחק רשת מול ${opponentPlayer.name}`;
                     } else {
                       cardTitle = "משחק רשת - ממתין ליריב ⏳";
@@ -555,43 +568,103 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   }
 
                   // Score Labels
-                  const localLabel = `${localPlayer?.name || 'שחקן'} (אתה)`;
+                  const localLabel = "את/ה";
                   const opponentLabel = isPVP ? (opponentPlayer?.name || 'יריב') : 'מחשב';
 
                   // Turn Indicator
                   const isMyTurn = game.phase === 'PLAYING' && game.currentPlayerIndex === localPlayerIndex;
 
-                  const turnBadge = isMyTurn ? (
-                    <span style={{
-                      fontSize: '11px',
-                      fontWeight: 'bold',
-                      color: 'var(--color-success)',
-                      background: 'rgba(46, 125, 50, 0.08)',
-                      border: '1.5px solid var(--color-success)',
-                      padding: '2px 8px',
-                      borderRadius: '12px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}>
-                      תורך כעת! 🟢
-                    </span>
-                  ) : (
-                    <span style={{
-                      fontSize: '11px',
-                      fontWeight: 'bold',
-                      color: 'var(--color-text-secondary)',
-                      background: 'rgba(0, 0, 0, 0.03)',
-                      border: '1px solid rgba(0, 0, 0, 0.1)',
-                      padding: '2px 8px',
-                      borderRadius: '12px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}>
-                      תור היריב ⏳
-                    </span>
-                  );
+                  let turnBadge = null;
+                  if (game.phase === 'PLAYING') {
+                    turnBadge = isMyTurn ? (
+                      <span style={{
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        color: 'var(--color-success)',
+                        background: 'rgba(46, 125, 50, 0.08)',
+                        border: '1.5px solid var(--color-success)',
+                        padding: '2px 8px',
+                        borderRadius: '12px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}>
+                        תורך כעת! 🟢
+                      </span>
+                    ) : (
+                      <span style={{
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        color: 'var(--color-text-secondary)',
+                        background: 'rgba(0, 0, 0, 0.03)',
+                        border: '1px solid rgba(0, 0, 0, 0.1)',
+                        padding: '2px 8px',
+                        borderRadius: '12px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}>
+                        תור היריב ⏳
+                      </span>
+                    );
+                  } else if (game.phase === 'GAME_OVER') {
+                    if (game.forfeitedBy) {
+                      if (game.forfeitedBy === myUid) {
+                        turnBadge = (
+                          <span style={{
+                            fontSize: '11px',
+                            fontWeight: 'bold',
+                            color: 'var(--color-danger)',
+                            background: 'rgba(211, 47, 47, 0.08)',
+                            border: '1.5px solid var(--color-danger)',
+                            padding: '2px 8px',
+                            borderRadius: '12px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}>
+                            🏳️ הפסד (פרישה)
+                          </span>
+                        );
+                      } else {
+                        turnBadge = (
+                          <span style={{
+                            fontSize: '11px',
+                            fontWeight: 'bold',
+                            color: 'hsl(45, 100%, 35%)',
+                            background: 'rgba(255, 193, 7, 0.15)',
+                            border: '1.5px solid hsl(45, 100%, 40%)',
+                            padding: '2px 8px',
+                            borderRadius: '12px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}>
+                            🏆 ניצחון טכני
+                          </span>
+                        );
+                      }
+                    } else {
+                      const isWinner = localPlayer?.score > opponentPlayer?.score;
+                      const isTie = localPlayer?.score === opponentPlayer?.score;
+                      turnBadge = (
+                        <span style={{
+                          fontSize: '11px',
+                          fontWeight: 'bold',
+                          color: isTie ? 'var(--color-primary)' : (isWinner ? 'var(--color-success)' : 'var(--color-danger)'),
+                          background: isTie ? 'rgba(0, 0, 0, 0.03)' : (isWinner ? 'rgba(46, 125, 50, 0.08)' : 'rgba(211, 47, 47, 0.08)'),
+                          border: `1.5px solid ${isTie ? 'var(--color-primary)' : (isWinner ? 'var(--color-success)' : 'var(--color-danger)')}`,
+                          padding: '2px 8px',
+                          borderRadius: '12px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}>
+                          {isTie ? '🤝 תיקו' : (isWinner ? '🎉 ניצחון' : '😔 הפסד')}
+                        </span>
+                      );
+                    }
+                  }
 
                   return (
                     <div 
@@ -638,7 +711,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                               {difficultyText}
                             </span>
                           )}
-                          {game.phase === 'PLAYING' && turnBadge}
+                          {(game.phase === 'PLAYING' || game.phase === 'GAME_OVER') && turnBadge}
                         </div>
                         <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
                           ניקוד: <strong style={{ color: 'var(--color-accent)' }}>{localPlayer?.score ?? 0}</strong> ({localLabel}) לעומת <strong style={{ color: 'var(--color-text-primary)' }}>{opponentPlayer?.score ?? 0}</strong> ({opponentLabel})

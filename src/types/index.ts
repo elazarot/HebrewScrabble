@@ -85,6 +85,7 @@ export interface GameState {
   turnNumber: number;
   gameMode: 'PVE' | 'PVP';
   aiDifficulty: AIDifficulty;
+  forfeitedBy?: string | null;
 }
 
 /** Entry in the move history log */

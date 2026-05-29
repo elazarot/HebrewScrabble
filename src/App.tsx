@@ -92,7 +92,7 @@ const App: React.FC = () => {
       if (saved) {
         const parsed: Record<string, GameState> = JSON.parse(saved);
         const list = Object.values(parsed).filter(
-          (g) => g && g.phase === 'PLAYING' && g.id && (g.moveHistory?.length > 0 || g.turnNumber > 1)
+          (g) => g && (g.phase === 'PLAYING' || (g.gameMode === 'PVP' && g.phase === 'GAME_OVER')) && g.id && (g.moveHistory?.length > 0 || g.turnNumber > 1)
         );
         list.sort((a, b) => b.updatedAt - a.updatedAt);
         setSavedGamesList(list);
@@ -116,11 +116,27 @@ const App: React.FC = () => {
     setScreen('GAME');
   }, [loadGame]);
 
-  const handleDeleteGame = useCallback((gameId: string) => {
+  const handleDeleteGame = useCallback(async (gameId: string) => {
     try {
       const saved = localStorage.getItem('scrabble_saved_games');
       if (saved) {
         const parsed: Record<string, GameState> = JSON.parse(saved);
+        const game = parsed[gameId];
+        
+        // If it's an active PvP game that hasn't ended yet, forfeit it in Firestore on delete
+        if (game && game.gameMode === 'PVP' && game.phase === 'PLAYING') {
+          try {
+            const matchRef = doc(db, 'matches', gameId);
+            await updateDoc(matchRef, {
+              status: 'GAME_OVER',
+              forfeitedBy: myUid,
+              updatedAt: Timestamp.now()
+            });
+          } catch (err) {
+            console.warn("Could not sync forfeit on delete:", err);
+          }
+        }
+
         delete parsed[gameId];
         localStorage.setItem('scrabble_saved_games', JSON.stringify(parsed));
         soundService.playTileRecall();
@@ -129,7 +145,7 @@ const App: React.FC = () => {
     } catch (e) {
       console.error("Error deleting game:", e);
     }
-  }, [refreshSavedGames]);
+  }, [myUid, refreshSavedGames]);
 
   const showMessage = useCallback((text: string, type: Message['type']) => {
     setMessage({ text, type });
@@ -222,8 +238,8 @@ const App: React.FC = () => {
               const parsed: Record<string, GameState> = JSON.parse(savedGames);
               const localSavedGame = parsed[game.id];
               
-              if (localSavedGame && incomingState.turnNumber > localSavedGame.turnNumber) {
-                // Opponent made a turn!
+              if (localSavedGame && (incomingState.turnNumber > localSavedGame.turnNumber || incomingState.phase !== localSavedGame.phase)) {
+                // Opponent made a turn or forfeited!
                 parsed[game.id] = incomingState;
                 localStorage.setItem('scrabble_saved_games', JSON.stringify(parsed));
                 refreshSavedGames();
@@ -543,23 +559,37 @@ const App: React.FC = () => {
         const matchRef = doc(db, 'matches', state.id);
         await updateDoc(matchRef, {
           status: 'GAME_OVER',
+          forfeitedBy: myUid,
           updatedAt: Timestamp.now()
         });
+
+        // Update locally in localStorage instead of deleting it immediately,
+        // so the user can see they forfeited, and then delete the card when they want.
+        const saved = localStorage.getItem('scrabble_saved_games');
+        if (saved) {
+          const parsed: Record<string, GameState> = JSON.parse(saved);
+          if (parsed[state.id]) {
+            parsed[state.id].phase = 'GAME_OVER';
+            parsed[state.id].forfeitedBy = myUid;
+            parsed[state.id].updatedAt = Date.now();
+            localStorage.setItem('scrabble_saved_games', JSON.stringify(parsed));
+          }
+        }
       } catch (e) {
         console.error("Error forfeiting online game:", e);
       }
-    }
-
-    // Delete the game from localStorage
-    try {
-      const saved = localStorage.getItem('scrabble_saved_games');
-      if (saved) {
-        const parsed: Record<string, GameState> = JSON.parse(saved);
-        delete parsed[state.id];
-        localStorage.setItem('scrabble_saved_games', JSON.stringify(parsed));
+    } else {
+      // For PvE games, we can just delete it from localStorage on forfeit
+      try {
+        const saved = localStorage.getItem('scrabble_saved_games');
+        if (saved) {
+          const parsed: Record<string, GameState> = JSON.parse(saved);
+          delete parsed[state.id];
+          localStorage.setItem('scrabble_saved_games', JSON.stringify(parsed));
+        }
+      } catch (e) {
+        console.error("Error deleting PVE game on forfeit:", e);
       }
-    } catch (e) {
-      console.error("Error deleting game on forfeit:", e);
     }
 
     // Reset the internal hook state to a clean blank game to avoid resurrection
@@ -573,7 +603,7 @@ const App: React.FC = () => {
     setSelectedTile(null);
     setMessage(null);
     showMessage('פרשת מהמשחק!', 'info');
-  }, [state.id, isOnlineGame, resetGame, refreshSavedGames, showMessage]);
+  }, [state.id, isOnlineGame, myUid, resetGame, refreshSavedGames, showMessage]);
 
   // PvP Multiplayer Create/Join Callbacks
   const handleCreateOnlineRoom = useCallback(async (isPublic: boolean, name: string) => {
@@ -648,6 +678,63 @@ const App: React.FC = () => {
 
   // (player derivations are defined above, near the hook)
 
+  const handleUpdatePlayerName = useCallback(async (newName: string) => {
+    try {
+      // 1. Update active local game state if currently playing
+      if (state.gameMode === 'PVP' && state.players) {
+        const localIdx = state.players[1]?.id === myUid ? 1 : 0;
+        if (state.players[localIdx]) {
+          state.players[localIdx].name = newName;
+        }
+      }
+
+      // 2. Update active list in localStorage and Firestore in background
+      const saved = localStorage.getItem('scrabble_saved_games');
+      if (saved) {
+        const parsed: Record<string, GameState> = JSON.parse(saved);
+        let updatedAny = false;
+        
+        for (const gameId in parsed) {
+          const game = parsed[gameId];
+          if (game && game.gameMode === 'PVP') {
+            const localIdx = game.players[1]?.id === myUid ? 1 : 0;
+            if (game.players[localIdx] && game.players[localIdx].name !== newName) {
+              game.players[localIdx].name = newName;
+              updatedAny = true;
+
+              // Propagate to Firestore for this game
+              try {
+                const matchRef = doc(db, 'matches', gameId);
+                const matchSnap = await getDoc(matchRef);
+                if (matchSnap.exists()) {
+                  const matchData = matchSnap.data();
+                  const updatedPlayers = [...matchData.players];
+                  const firestoreLocalIdx = matchData.players[1]?.uid === myUid ? 1 : 0;
+                  if (updatedPlayers[firestoreLocalIdx]) {
+                    updatedPlayers[firestoreLocalIdx].name = newName;
+                    await updateDoc(matchRef, {
+                      players: updatedPlayers,
+                      updatedAt: Timestamp.now()
+                    });
+                  }
+                }
+              } catch (err) {
+                console.warn(`Could not update player name in Firestore for game ${gameId}:`, err);
+              }
+            }
+          }
+        }
+        
+        if (updatedAny) {
+          localStorage.setItem('scrabble_saved_games', JSON.stringify(parsed));
+          refreshSavedGames();
+        }
+      }
+    } catch (e) {
+      console.error("Error updating player name:", e);
+    }
+  }, [state, myUid, refreshSavedGames]);
+
   // ===== MENU SCREEN =====
   if (screen === 'MENU') {
     return (
@@ -661,6 +748,7 @@ const App: React.FC = () => {
         onJoinOnlineRoom={handleJoinOnlineRoom}
         onJoinPublicLobby={handleJoinPublicLobby}
         myUid={myUid}
+        onUpdatePlayerName={handleUpdatePlayerName}
       />
     );
   }
@@ -873,12 +961,16 @@ const App: React.FC = () => {
 
         <div className="header-scores" style={{ justifySelf: 'center' }}>
           <div className={`player-score ${state.currentPlayerIndex === 0 ? 'player-score--active' : ''}`}>
-            <span className="score-name">{state.players[0]?.name}</span>
+            <span className="score-name">
+              {(state.gameMode === 'PVP' ? state.players[0]?.id === myUid : !state.players[0]?.isAI) ? "את/ה" : state.players[0]?.name}
+            </span>
             <span className="score-value">{state.players[0]?.score}</span>
           </div>
           <div style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-lg)', margin: '0 var(--space-2)' }}>:</div>
           <div className={`player-score ${state.currentPlayerIndex === 1 ? 'player-score--active' : ''}`}>
-            <span className="score-name">{state.players[1]?.name}</span>
+            <span className="score-name">
+              {(state.gameMode === 'PVP' ? state.players[1]?.id === myUid : !state.players[1]?.isAI) ? "את/ה" : state.players[1]?.name}
+            </span>
             <span className="score-value">{state.players[1]?.score}</span>
           </div>
         </div>
@@ -1083,28 +1175,62 @@ const App: React.FC = () => {
 
       {/* Game Over Overlay */}
       {state.phase === 'GAME_OVER' && (
-        <div className="game-over-overlay">
-          <div className="game-over-card">
-            <h2>
-              {localPlayer?.score > opponentPlayer?.score
-                ? '🎉 ניצחת!'
-                : localPlayer?.score < opponentPlayer?.score
-                ? '😔 הפסדת'
-                : '🤝 תיקו!'}
-            </h2>
-            <div className="final-scores">
+        <div className="game-over-overlay" style={{ zIndex: 11000 }}>
+          <div className="game-over-card" style={{ direction: 'rtl', textAlign: 'center' }}>
+            {state.forfeitedBy ? (
+              <>
+                <h2>
+                  {state.forfeitedBy !== myUid ? '🏆 ניצחון טכני!' : '🏳️ פרשת מהמשחק'}
+                </h2>
+                <p style={{ color: 'var(--color-text-secondary)', fontWeight: 500, fontSize: 'var(--text-md)', margin: 'var(--space-2) 0 var(--space-4) 0' }}>
+                  {state.forfeitedBy !== myUid ? 'היריב פרש מהמשחק!' : 'הכרזת על הפסד טכני.'}
+                </p>
+              </>
+            ) : (
+              <h2>
+                {localPlayer?.score > opponentPlayer?.score
+                  ? '🎉 ניצחת!'
+                  : localPlayer?.score < opponentPlayer?.score
+                  ? '😔 הפסדת'
+                  : '🤝 תיקו!'}
+              </h2>
+            )}
+            
+            <div className="final-scores" style={{ margin: 'var(--space-4) 0' }}>
               <div className={`final-score ${localPlayer?.score >= opponentPlayer?.score ? 'winner' : ''}`}>
-                <span className="final-score-label">{localPlayer?.name}</span>
+                <span className="final-score-label">את/ה</span>
                 <span className="final-score-value">{localPlayer?.score}</span>
               </div>
               <div className={`final-score ${opponentPlayer?.score >= localPlayer?.score ? 'winner' : ''}`}>
-                <span className="final-score-label">{opponentPlayer?.name}</span>
+                <span className="final-score-label">{opponentPlayer?.name || 'יריב'}</span>
                 <span className="final-score-value">{opponentPlayer?.score}</span>
               </div>
             </div>
-            <button className="btn btn--accent" onClick={handleNewGame} id="btn-new-game">
-              🔄 משחק חדש
-            </button>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', width: '100%', marginTop: 'var(--space-4)' }}>
+              <button 
+                className="btn btn--accent" 
+                onClick={handleNewGame} 
+                id="btn-close-game"
+                style={{ width: '100%' }}
+              >
+                ✕ סגור וחזור לתפריט
+              </button>
+              
+              {state.gameMode === 'PVP' && (
+                <button 
+                  className="btn btn--secondary" 
+                  onClick={() => {
+                    handleDeleteGame(state.id);
+                    handleNewGame();
+                  }}
+                  id="btn-delete-finished"
+                  style={{ width: '100%', borderColor: 'var(--color-danger)', color: 'var(--color-danger)' }}
+                >
+                  🗑️ מחק משחק מהרשימה
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
