@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "696772776771",
+    "firebase_url": "https://hebrewscrabble-default-rtdb.firebaseio.com",
+    "project_id": "hebrewscrabble",
+    "storage_bucket": "hebrewscrabble.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:696772776771:android:244edb71a0d120712a55f6",
+        "android_client_info": {
+          "package_name": "com.hebrewscrabble.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDCvfXbUzBAH7DgsYJ6uJOZIb6mILtpYjE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
