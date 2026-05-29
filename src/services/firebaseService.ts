@@ -132,16 +132,22 @@ export async function joinOnlineMatch(
   
   const guestRack = matchData.racks?.PENDING || [];
   
-  // Update players list and assign guest's rack, deleting the PENDING key
-  const updateData: Record<string, any> = {
-    status: 'PLAYING',
-    updatedAt: Timestamp.now(),
-    'players.1': {
+  // Safe array element update for Cloud Firestore
+  const updatedPlayers = [
+    matchData.players[0],
+    {
       uid: guestUid,
       name: guestName,
       score: 0,
       isReady: true
-    },
+    }
+  ];
+
+  // Update players list and assign guest's rack, deleting the PENDING key
+  const updateData: Record<string, any> = {
+    status: 'PLAYING',
+    updatedAt: Timestamp.now(),
+    players: updatedPlayers,
     [`racks.${guestUid}`]: guestRack,
     'racks.PENDING': deleteField()
   };
@@ -173,9 +179,21 @@ export async function submitOnlineTurn(
     phase: newState.phase, // WAITING | PLAYING | GAME_OVER
     status: newState.phase === 'GAME_OVER' ? 'GAME_OVER' : 'PLAYING',
     
-    // Sync player scores
-    'players.0.score': newState.players[0].score,
-    'players.1.score': newState.players[1].score,
+    // Sync player scores safely by updating the players array
+    players: [
+      {
+        uid: newState.players[0].id,
+        name: newState.players[0].name,
+        score: newState.players[0].score,
+        isReady: true
+      },
+      {
+        uid: newState.players[1].id,
+        name: newState.players[1].name,
+        score: newState.players[1].score,
+        isReady: true
+      }
+    ],
 
     // Sync active racks privately
     [`racks.${playerUid}`]: playerRack
