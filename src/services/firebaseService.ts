@@ -11,6 +11,7 @@ import {
   getDoc,
   setDoc, 
   updateDoc, 
+  deleteDoc,
   deleteField,
   onSnapshot, 
   collection, 
@@ -187,6 +188,7 @@ export async function submitOnlineTurn(
     status: newState.phase === 'GAME_OVER' 
       ? 'GAME_OVER' 
       : (isOpponentJoined ? 'PLAYING' : 'WAITING'),
+    ...(newState.phase === 'GAME_OVER' ? { expireAt: Timestamp.fromDate(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)) } : {}),
     
     // Sync player scores safely by updating the players array
     players: [
@@ -314,4 +316,16 @@ export function convertFirestoreMatchToGameState(matchData: any, myUid: string):
     aiDifficulty: 'EASY',
     forfeitedBy: matchData.forfeitedBy || null
   };
+}
+
+/**
+ * Delete a match document entirely from Firestore.
+ */
+export async function deleteOnlineMatch(lobbyCode: string): Promise<void> {
+  try {
+    const matchRef = doc(db, 'matches', lobbyCode);
+    await deleteDoc(matchRef);
+  } catch (e) {
+    console.error("Error deleting online match from Firestore:", e);
+  }
 }

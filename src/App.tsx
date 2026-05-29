@@ -23,12 +23,104 @@ import {
   listenToMatch, 
   listenToPublicLobbies, 
   convertFirestoreMatchToGameState,
+  deleteOnlineMatch,
   db
 } from './services/firebaseService';
-import { doc, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { createInitialGameState, gameReducer } from './engine/gameState';
 import { drawTiles } from './engine/tileBag';
 import gameConfig from './assets/game-config.json';
+import { LocalNotifications } from '@capacitor/local-notifications';
+import { PushNotifications } from '@capacitor/push-notifications';
+
+// Request notification permissions for both native Capacitor and web browser
+const requestNotificationPermissions = async () => {
+  try {
+    const perm = await LocalNotifications.checkPermissions();
+    if (perm.display !== 'granted') {
+      await LocalNotifications.requestPermissions();
+    }
+  } catch (e) {
+    console.debug("Capacitor permissions request not available, checking HTML5 Web Notification...");
+  }
+
+  if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+    try {
+      await Notification.requestPermission();
+    } catch (e) {
+      console.warn("Error requesting browser notification permission:", e);
+    }
+  }
+};
+
+// Robust notification trigger supporting both native mobile and standard web
+const triggerSystemNotification = async (title: string, body: string, gameId?: string) => {
+  try {
+    const hasPermission = await LocalNotifications.checkPermissions();
+    if (hasPermission.display === 'granted') {
+      await LocalNotifications.schedule({
+        notifications: [
+          {
+            title,
+            body,
+            id: Math.floor(Math.random() * 100000),
+            extra: gameId ? { gameId } : {}
+          }
+        ]
+      });
+      return;
+    }
+  } catch (e) {
+    console.debug("Capacitor LocalNotifications not supported/available on this platform, trying HTML5 Web Notification...", e);
+  }
+
+  if (typeof window !== 'undefined' && 'Notification' in window) {
+    if (Notification.permission === 'granted') {
+      try {
+        new Notification(title, { body, icon: '/favicon.png' });
+      } catch (err) {
+        console.warn("Failed to trigger HTML5 Notification:", err);
+      }
+    }
+  }
+};
+
+// Request and register native mobile push notifications FCM token
+const setupPushNotifications = async (uid: string) => {
+  try {
+    const perm = await PushNotifications.requestPermissions();
+    if (perm.receive === 'granted') {
+      // Register with FCM natively
+      await PushNotifications.register();
+      
+      // Listen for successful registration
+      await PushNotifications.addListener('registration', async (token) => {
+        const fcmToken = token.value;
+        console.log("Registered natively for push notifications, FCM Token:", fcmToken);
+        
+        // Save FCM token under /users/{uid} in Firestore
+        const userRef = doc(db, 'users', uid);
+        try {
+          await updateDoc(userRef, { fcmToken, updatedAt: Timestamp.now() });
+        } catch (e) {
+          // If document doesn't exist yet, write it using setDoc
+          try {
+            await setDoc(userRef, { fcmToken, updatedAt: Timestamp.now() }, { merge: true });
+          } catch (err) {
+            console.warn("Failed to write FCM token to Firestore:", err);
+          }
+        }
+      });
+
+      // Listen for registration errors
+      await PushNotifications.addListener('registrationError', (err) => {
+        console.warn("Push registration failed natively:", err);
+      });
+    }
+  } catch (e) {
+    console.debug("Capacitor Push Notifications not available on this platform. Skipping native registration...", e);
+  }
+};
 
 /** Hebrew letters for blank tile assignment */
 const HEBREW_LETTERS = ['א','ב','ג','ד','ה','ו','ז','ח','ט','י','כ','ל','מ','נ','ס','ע','פ','צ','ק','ר','ש','ת'];
@@ -123,17 +215,28 @@ const App: React.FC = () => {
         const parsed: Record<string, GameState> = JSON.parse(saved);
         const game = parsed[gameId];
         
-        // If it's an active PvP game that hasn't ended yet, forfeit it in Firestore on delete
-        if (game && game.gameMode === 'PVP' && game.phase === 'PLAYING') {
-          try {
-            const matchRef = doc(db, 'matches', gameId);
-            await updateDoc(matchRef, {
-              status: 'GAME_OVER',
-              forfeitedBy: myUid,
-              updatedAt: Timestamp.now()
-            });
-          } catch (err) {
-            console.warn("Could not sync forfeit on delete:", err);
+        // If it's a PvP game:
+        if (game && game.gameMode === 'PVP') {
+          if (game.phase === 'PLAYING') {
+            // Forfeit active game in Firestore with a 14-day expiration
+            try {
+              const matchRef = doc(db, 'matches', gameId);
+              await updateDoc(matchRef, {
+                status: 'GAME_OVER',
+                forfeitedBy: myUid,
+                updatedAt: Timestamp.now(),
+                expireAt: Timestamp.fromDate(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000))
+              });
+            } catch (err) {
+              console.warn("Could not sync forfeit on delete:", err);
+            }
+          } else if (game.phase === 'GAME_OVER') {
+            // Completed game is deleted completely from Firestore!
+            try {
+              await deleteOnlineMatch(gameId);
+            } catch (err) {
+              console.warn("Could not delete completed match from Firestore:", err);
+            }
           }
         }
 
@@ -151,12 +254,13 @@ const App: React.FC = () => {
     setMessage({ text, type });
   }, []);
 
-  // 1. Firebase Anonymous Auth Sign-In on mount
+  // 1. Firebase Anonymous Auth Sign-In on mount & Request Notification permission
   useEffect(() => {
     const initAuth = async () => {
       try {
         const user = await signInPlayer();
         setMyUid(user.uid);
+        setupPushNotifications(user.uid);
       } catch (error) {
         console.warn("Firebase Auth failed, falling back to local guest UID:", error);
         let localUid = localStorage.getItem('scrabble_local_uid');
@@ -165,9 +269,13 @@ const App: React.FC = () => {
           localStorage.setItem('scrabble_local_uid', localUid);
         }
         setMyUid(localUid);
+        setupPushNotifications(localUid);
       }
     };
     initAuth();
+
+    // Request native device/browser Notification permissions on app startup
+    requestNotificationPermissions();
   }, []);
 
   // 2. Real-time listener for open public lobbies
@@ -233,6 +341,20 @@ const App: React.FC = () => {
             
             const incomingState = convertFirestoreMatchToGameState(matchData, myUid);
             
+            // Safety check: if I forfeited, delete locally and return immediately to prevent flashing/reappearing
+            if (incomingState.forfeitedBy === myUid) {
+              const saved = localStorage.getItem('scrabble_saved_games');
+              if (saved) {
+                const parsed: Record<string, GameState> = JSON.parse(saved);
+                if (parsed[game.id]) {
+                  delete parsed[game.id];
+                  localStorage.setItem('scrabble_saved_games', JSON.stringify(parsed));
+                  refreshSavedGames();
+                }
+              }
+              return;
+            }
+            
             const savedGames = localStorage.getItem('scrabble_saved_games');
             if (savedGames) {
               const parsed: Record<string, GameState> = JSON.parse(savedGames);
@@ -251,6 +373,7 @@ const App: React.FC = () => {
                   
                   const opponentName = localPlayerIndex === 0 ? matchData.players[1].name : matchData.players[0].name;
                   
+                  // Show in-app notification banner
                   setActiveNotification({
                     lobbyCode: game.id,
                     opponentName,
@@ -262,6 +385,18 @@ const App: React.FC = () => {
                   notificationTimerRef.current = setTimeout(() => {
                     setActiveNotification(null);
                   }, 3000); // Auto-dismiss after exactly 3 seconds
+
+                  // Native Push/System Notification trigger (supporting mobile Capacitor & desktop web)
+                  const actionText = matchData.lastMove ? (
+                    matchData.lastMove.action === 'PLAY' ? `שיחק מילה: "${matchData.lastMove.word}"` :
+                    matchData.lastMove.action === 'PASS' ? 'עבר תור' : 'החליף אריחים'
+                  ) : 'שיחק מהלך';
+                  
+                  triggerSystemNotification(
+                    `שבץ נא - תורך לשחק! 🟢`,
+                    `היריב ${opponentName} ${actionText}. היכנס לביצוע המהלך שלך!`,
+                    game.id
+                  );
                 }
               }
             }
@@ -560,7 +695,8 @@ const App: React.FC = () => {
         await updateDoc(matchRef, {
           status: 'GAME_OVER',
           forfeitedBy: myUid,
-          updatedAt: Timestamp.now()
+          updatedAt: Timestamp.now(),
+          expireAt: Timestamp.fromDate(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000))
         });
       } catch (e) {
         console.error("Error forfeiting online game:", e);
@@ -1198,27 +1334,43 @@ const App: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', width: '100%', marginTop: 'var(--space-4)' }}>
-              <button 
-                className="btn btn--accent" 
-                onClick={handleNewGame} 
-                id="btn-close-game"
-                style={{ width: '100%' }}
-              >
-                ✕ סגור וחזור לתפריט
-              </button>
-              
-              {state.gameMode === 'PVP' && (
+              {state.forfeitedBy ? (
                 <button 
-                  className="btn btn--secondary" 
+                  className="btn btn--accent" 
                   onClick={() => {
                     handleDeleteGame(state.id);
                     handleNewGame();
                   }}
-                  id="btn-delete-finished"
-                  style={{ width: '100%', borderColor: 'var(--color-danger)', color: 'var(--color-danger)' }}
+                  id="btn-delete-forfeited"
+                  style={{ width: '100%' }}
                 >
-                  🗑️ מחק משחק מהרשימה
+                  🗑️ סגור ומחק משחק מהרשימה
                 </button>
+              ) : (
+                <>
+                  <button 
+                    className="btn btn--accent" 
+                    onClick={handleNewGame} 
+                    id="btn-close-game"
+                    style={{ width: '100%' }}
+                  >
+                    ✕ סגור וחזור לתפריט
+                  </button>
+                  
+                  {state.gameMode === 'PVP' && (
+                    <button 
+                      className="btn btn--secondary" 
+                      onClick={() => {
+                        handleDeleteGame(state.id);
+                        handleNewGame();
+                      }}
+                      id="btn-delete-finished"
+                      style={{ width: '100%', borderColor: 'var(--color-danger)', color: 'var(--color-danger)' }}
+                    >
+                      🗑️ מחק משחק מהרשימה
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>

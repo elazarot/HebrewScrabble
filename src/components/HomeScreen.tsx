@@ -369,9 +369,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                       <div style={{ fontWeight: 'bold', fontSize: 'var(--text-sm)' }}>
                         החדר של {lobby.players[0].name}
                       </div>
-                      <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-                        קוד: {lobby.id}
-                      </div>
                     </div>
                   </div>
                 ))
@@ -501,6 +498,132 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-base)', margin: 0, fontWeight: 500 }}>
             משחק המילים הקלאסי בעברית
           </p>
+        </div>
+
+        {/* Menu Buttons Group */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', width: '100%', marginBottom: 'var(--space-2)' }}>
+          
+          {/* Option 1: PVE button (expands difficulty choice) */}
+          {!showPVEModal ? (
+            <button
+              className="difficulty-btn"
+              onClick={() => { handleButtonClick(); setShowPVEModal(true); }}
+              style={{
+                width: '100%',
+                padding: 'var(--space-4) var(--space-6)',
+                borderRadius: 'var(--radius-lg)',
+                border: '2px solid hsla(45, 20%, 50%, 0.2)',
+                background: 'linear-gradient(to bottom, var(--color-bg-primary), var(--color-bg-secondary))',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--space-4)',
+                textAlign: 'right',
+                transition: 'all 0.2s',
+                boxShadow: 'var(--shadow-md)'
+              }}
+            >
+              <span style={{ fontSize: '32px' }}>🤖</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 'bold', fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)' }}>משחק מול המחשב</div>
+                <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', marginTop: '2px' }}>שחק לבד מול ה-AI שלנו ברמות קושי משתנות</div>
+              </div>
+              <span style={{ fontSize: 'var(--text-lg)', color: 'var(--color-text-muted)' }}>←</span>
+            </button>
+          ) : (
+            /* PvE Difficulty Choices */
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: 'var(--space-2)', 
+              width: '100%', 
+              background: 'hsla(45, 20%, 50%, 0.05)', 
+              padding: 'var(--space-3)', 
+              borderRadius: 'var(--radius-lg)',
+              border: '1px dashed hsla(45, 20%, 50%, 0.2)'
+            }}>
+              <div style={{ display: 'flex', gap: 'var(--space-2)', width: '100%' }}>
+                <button
+                  className="difficulty-btn"
+                  onClick={() => selectGameMode('PVE', 'EASY')}
+                  style={{
+                    flex: 1,
+                    padding: 'var(--space-4)',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1.5px solid var(--color-success)',
+                    background: 'var(--color-bg-primary)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  <span style={{ fontSize: '24px' }}>😊</span>
+                  <span style={{ fontWeight: 'bold', color: 'var(--color-success)' }}>רמה קלה</span>
+                  <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>למתחילים</span>
+                </button>
+                <button
+                  className="difficulty-btn"
+                  onClick={() => selectGameMode('PVE', 'HARD')}
+                  style={{
+                    flex: 1,
+                    padding: 'var(--space-4)',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1.5px solid var(--color-danger)',
+                    background: 'var(--color-bg-primary)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  <span style={{ fontSize: '24px' }}>🧠</span>
+                  <span style={{ fontWeight: 'bold', color: 'var(--color-danger)' }}>רמה קשה</span>
+                  <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>למומחים ואסטרטגים</span>
+                </button>
+              </div>
+              <button 
+                onClick={() => { handleButtonClick(); setShowPVEModal(false); }}
+                style={{
+                  background: 'none', border: 'none', color: 'var(--color-text-muted)',
+                  fontSize: 'var(--text-sm)', padding: '6px', cursor: 'pointer', fontWeight: 600,
+                  textDecoration: 'underline'
+                }}
+              >
+                חזור לאפשרויות
+              </button>
+            </div>
+          )}
+
+          {/* Option 3: Online PvP */}
+          <button
+            className="difficulty-btn"
+            onClick={() => { soundService.playTilePlace(); setShowOnlineDashboard(true); }}
+            style={{
+              width: '100%',
+              padding: 'var(--space-4) var(--space-6)',
+              borderRadius: 'var(--radius-lg)',
+              border: '2px solid hsla(45, 20%, 50%, 0.2)',
+              background: 'linear-gradient(to bottom, var(--color-bg-primary), var(--color-bg-secondary))',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'var(--space-4)',
+              textAlign: 'right',
+              transition: 'all 0.2s',
+              boxShadow: 'var(--shadow-md)'
+            }}
+          >
+            <span style={{ fontSize: '32px' }}>🌐</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 'bold', fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)' }}>משחק אונליין</div>
+              <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', marginTop: '2px' }}>שחקו נגד חברים מרחוק או שחקנים אקראיים</div>
+            </div>
+            <span style={{ fontSize: 'var(--text-lg)', color: 'var(--color-text-muted)' }}>←</span>
+          </button>
+
         </div>
 
           {/* Active Games List */}
@@ -765,132 +888,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </div>
             </div>
           )}
-
-        {/* Menu Buttons Group */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', width: '100%' }}>
-          
-          {/* Option 1: PVE button (expands difficulty choice) */}
-          {!showPVEModal ? (
-            <button
-              className="difficulty-btn"
-              onClick={() => { handleButtonClick(); setShowPVEModal(true); }}
-              style={{
-                width: '100%',
-                padding: 'var(--space-4) var(--space-6)',
-                borderRadius: 'var(--radius-lg)',
-                border: '2px solid hsla(45, 20%, 50%, 0.2)',
-                background: 'linear-gradient(to bottom, var(--color-bg-primary), var(--color-bg-secondary))',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 'var(--space-4)',
-                textAlign: 'right',
-                transition: 'all 0.2s',
-                boxShadow: 'var(--shadow-md)'
-              }}
-            >
-              <span style={{ fontSize: '32px' }}>🤖</span>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 'bold', fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)' }}>משחק מול המחשב</div>
-                <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', marginTop: '2px' }}>שחק לבד מול ה-AI שלנו ברמות קושי משתנות</div>
-              </div>
-              <span style={{ fontSize: 'var(--text-lg)', color: 'var(--color-text-muted)' }}>←</span>
-            </button>
-          ) : (
-            /* PvE Difficulty Choices */
-            <div style={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              gap: 'var(--space-2)', 
-              width: '100%', 
-              background: 'hsla(45, 20%, 50%, 0.05)', 
-              padding: 'var(--space-3)', 
-              borderRadius: 'var(--radius-lg)',
-              border: '1px dashed hsla(45, 20%, 50%, 0.2)'
-            }}>
-              <div style={{ display: 'flex', gap: 'var(--space-2)', width: '100%' }}>
-                <button
-                  className="difficulty-btn"
-                  onClick={() => selectGameMode('PVE', 'EASY')}
-                  style={{
-                    flex: 1,
-                    padding: 'var(--space-4)',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1.5px solid var(--color-success)',
-                    background: 'var(--color-bg-primary)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '4px'
-                  }}
-                >
-                  <span style={{ fontSize: '24px' }}>😊</span>
-                  <span style={{ fontWeight: 'bold', color: 'var(--color-success)' }}>רמה קלה</span>
-                  <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>למתחילים</span>
-                </button>
-                <button
-                  className="difficulty-btn"
-                  onClick={() => selectGameMode('PVE', 'HARD')}
-                  style={{
-                    flex: 1,
-                    padding: 'var(--space-4)',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1.5px solid var(--color-danger)',
-                    background: 'var(--color-bg-primary)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '4px'
-                  }}
-                >
-                  <span style={{ fontSize: '24px' }}>🧠</span>
-                  <span style={{ fontWeight: 'bold', color: 'var(--color-danger)' }}>רמה קשה</span>
-                  <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>למומחים ואסטרטגים</span>
-                </button>
-              </div>
-              <button 
-                onClick={() => { handleButtonClick(); setShowPVEModal(false); }}
-                style={{
-                  background: 'none', border: 'none', color: 'var(--color-text-muted)',
-                  fontSize: 'var(--text-sm)', padding: '6px', cursor: 'pointer', fontWeight: 600,
-                  textDecoration: 'underline'
-                }}
-              >
-                חזור לאפשרויות
-              </button>
-            </div>
-          )}
-
-          {/* Option 3: Online PvP */}
-          <button
-            className="difficulty-btn"
-            onClick={() => { soundService.playTilePlace(); setShowOnlineDashboard(true); }}
-            style={{
-              width: '100%',
-              padding: 'var(--space-4) var(--space-6)',
-              borderRadius: 'var(--radius-lg)',
-              border: '2px solid hsla(45, 20%, 50%, 0.2)',
-              background: 'linear-gradient(to bottom, var(--color-bg-primary), var(--color-bg-secondary))',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 'var(--space-4)',
-              textAlign: 'right',
-              transition: 'all 0.2s',
-              boxShadow: 'var(--shadow-md)'
-            }}
-          >
-            <span style={{ fontSize: '32px' }}>🌐</span>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 'bold', fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)' }}>משחק אונליין</div>
-              <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', marginTop: '2px' }}>שחקו נגד חברים מרחוק או שחקנים אקראיים</div>
-            </div>
-            <span style={{ fontSize: 'var(--text-lg)', color: 'var(--color-text-muted)' }}>←</span>
-          </button>
-
-        </div>
 
         {/* Footer legal attribution */}
         <div style={{ 
