@@ -618,6 +618,16 @@ const App: React.FC = () => {
     await handleJoinOnlineRoom(lobby.id, name);
   }, [handleJoinOnlineRoom]);
 
+  // Notification banner click transition
+  const handleNotificationClick = useCallback(() => {
+    if (!activeNotification) return;
+    soundService.playSuccess();
+    loadGame(activeNotification.gameState);
+    setActiveNotification(null);
+    if (notificationTimerRef.current) clearTimeout(notificationTimerRef.current);
+    setScreen('GAME');
+  }, [activeNotification, loadGame]);
+
   // (player derivations are defined above, near the hook)
 
   // ===== MENU SCREEN =====
@@ -635,16 +645,6 @@ const App: React.FC = () => {
       />
     );
   }
-
-  // Notification banner click transition
-  const handleNotificationClick = useCallback(() => {
-    if (!activeNotification) return;
-    soundService.playSuccess();
-    loadGame(activeNotification.gameState);
-    setActiveNotification(null);
-    if (notificationTimerRef.current) clearTimeout(notificationTimerRef.current);
-    setScreen('GAME');
-  }, [activeNotification, loadGame]);
 
   // ===== LOBBY SCREEN =====
   if (screen === 'LOBBY') {
